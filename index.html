@@ -94,6 +94,15 @@
       color: var(--muted);
     }
 
+    .ms {
+      margin-top: 6px;
+      font-size: clamp(18px, 3.5vw, 30px);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      text-shadow: 0 0 16px var(--glow);
+    }
+
     .separator {
       align-self: center;
       font-size: clamp(28px, 6vw, 52px);
@@ -190,6 +199,7 @@
     </div>
     <div class="unit">
       <div class="value" id="seconds">00</div>
+      <div class="ms" id="ms">.000</div>
       <div class="label">секунд</div>
     </div>
   </div>
@@ -219,6 +229,7 @@
         hours: document.getElementById('hours'),
         minutes: document.getElementById('minutes'),
         seconds: document.getElementById('seconds'),
+        ms: document.getElementById('ms'),
         target: document.getElementById('target'),
         percent: document.getElementById('percent'),
         fill: document.getElementById('fill')
@@ -258,6 +269,9 @@
           return;
         }
 
+        var ms = Math.floor(diff % 1000);
+        els.ms.textContent = '.' + String(ms).padStart(3, '0');
+
         var seconds = Math.floor(diff / 1000);
 
         els.days.textContent = pad(Math.floor(seconds / 86400));
@@ -269,7 +283,7 @@
       els.target.textContent = 'Целевая дата (по вашему местному времени): ' + formatDate(TARGET);
 
       tick();
-      setInterval(tick, 1000);
+      setInterval(tick, 40);
 
       updateProgress();
       setInterval(updateProgress, 100);
