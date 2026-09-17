@@ -464,14 +464,22 @@
 
       function spawnRandom() {
         if (!allMessages.length) return;
-        var m = allMessages[Math.floor(Math.random() * allMessages.length)];
-        spawnMessage(m);
+        var count = 1 + (Math.random() < 0.5 ? 1 : 0);
+        for (var i = 0; i < count; i++) {
+          var m = allMessages[Math.floor(Math.random() * allMessages.length)];
+          if (m) spawnMessage(m);
+        }
       }
+
+      var firstSnapshot = true;
 
       db.collection('messages')
         .orderBy('createdAt', 'asc')
-        .limitToLast(30)
+        .limitToLast(200)
         .onSnapshot(function (snap) {
+          var isFirst = firstSnapshot;
+          firstSnapshot = false;
+
           snap.docChanges().forEach(function (change) {
             if (change.type !== 'added') return;
             var id = change.doc.id;
@@ -480,13 +488,19 @@
             var data = change.doc.data();
             if (!data.text) return;
             allMessages.push(data.text);
-            spawnMessage(data.text);
+            if (!isFirst) spawnMessage(data.text);
           });
+
+          if (isFirst) {
+            setTimeout(function () {
+              for (var j = 0; j < 4; j++) spawnRandom();
+            }, 300);
+          }
         }, function (err) {
           console.error('listen error', err);
         });
 
-      setInterval(spawnRandom, 3000);
+      setInterval(spawnRandom, 1400);
     })();
   </script>
 </body>
