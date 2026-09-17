@@ -246,7 +246,7 @@
         }
 
         var remaining = Math.max(0, Math.min(100, (diff / total) * 100));
-        els.percent.textContent = remaining.toFixed(3) + '%';
+        els.percent.textContent = remaining.toFixed(5) + '%';
         els.fill.style.width = remaining.toFixed(3) + '%';
       }
 
