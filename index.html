@@ -122,6 +122,51 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .daystats {
+      margin-top: 28px;
+      width: min(560px, 90vw);
+    }
+
+    .daystats-info {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: clamp(11px, 1.5vw, 13px);
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    .daygrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(16px, 1fr));
+      gap: 6px;
+    }
+
+    .daycell {
+      aspect-ratio: 1;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .daycell.done {
+      background: linear-gradient(135deg, var(--accent), #a78bff);
+      border-color: transparent;
+      box-shadow: 0 0 8px var(--glow);
+    }
+
+    .daycell.today {
+      box-shadow: inset 0 0 0 2px #fff, 0 0 12px var(--glow);
+    }
+
+    .total-msgs {
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: clamp(12px, 1.6vw, 14px);
+      letter-spacing: 0.04em;
+    }
+
     .progress {
       margin-top: 36px;
       width: min(560px, 90vw);
@@ -241,7 +286,7 @@
       z-index: 5;
     }
 
-    .subtitle, h1, .timer, .done, .progress, .composer, .admin-link, .target {
+    .subtitle, h1, .timer, .done, .progress, .daystats, .total-msgs, .composer, .admin-link, .target {
       position: relative;
       z-index: 10;
     }
@@ -317,7 +362,18 @@
     </div>
   </div>
 
+  <div class="daystats">
+    <div class="daystats-info">
+      <span>16 сентября</span>
+      <span id="daystat-text">—</span>
+      <span>16 октября</span>
+    </div>
+    <div class="daygrid" id="daygrid"></div>
+  </div>
+
   <p class="target" id="target"></p>
+
+  <p class="total-msgs" id="total-msgs"></p>
 
   <form class="composer" id="composer">
     <input type="text" id="msg-input" maxlength="200" placeholder="Напишите что-нибудь..." autocomplete="off">
@@ -452,6 +508,17 @@
         });
       }
 
+      var totalMsgsEl = document.getElementById('total-msgs');
+
+      function refreshCount() {
+        if (!totalMsgsEl) return;
+        db.collection('messages').count().get().then(function (snap) {
+          totalMsgsEl.textContent = 'Всего написано сообщений: ' + snap.data().count;
+        }).catch(function () {});
+      }
+
+      refreshCount();
+
       compos.addEventListener('submit', function (e) {
         e.preventDefault();
         var text = input.value.trim();
@@ -462,6 +529,7 @@
           .then(function () {
             input.value = '';
             send.disabled = false;
+            refreshCount();
           })
           .catch(function (err) {
             console.error(err);
@@ -523,6 +591,33 @@
         });
 
       setInterval(spawnRandom, 1400);
+    })();
+  </script>
+
+  <script>
+    (function () {
+      var START = new Date(2026, 8, 16, 0, 0, 0, 0);
+      var TARGET = new Date(2026, 9, 16, 23, 59, 59, 0);
+
+      var grid = document.getElementById('daygrid');
+      var text = document.getElementById('daystat-text');
+      if (!grid || !text) return;
+
+      function dayUtc(d) { return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+      var sIdx = dayUtc(START);
+      var tIdx = dayUtc(TARGET);
+      var nIdx = dayUtc(new Date());
+      var totalCells = Math.round((tIdx - sIdx) / 86400000) + 1;
+      var passed = Math.max(0, Math.min(totalCells, Math.round((nIdx - sIdx) / 86400000) + 1));
+      var todayIdx = Math.min(passed - 1, totalCells - 1);
+
+      for (var i = 0; i < totalCells; i++) {
+        var cell = document.createElement('div');
+        cell.className = 'daycell' + (i < passed ? ' done' : '') + (i === todayIdx ? ' today' : '');
+        grid.appendChild(cell);
+      }
+      text.textContent = 'Прошло ' + passed + ' из ' + totalCells + ' дней';
     })();
   </script>
 </body>
