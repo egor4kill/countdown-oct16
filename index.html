@@ -464,7 +464,9 @@
       var send = document.getElementById('msg-send');
       var rain = document.getElementById('rain');
       var seen = {};
+      var knownTexts = {};
       var allMessages = [];
+      var lastPicked = -1;
 
       function spawnMessage(text) {
         var el = document.createElement('div');
@@ -514,8 +516,14 @@
         if (!allMessages.length) return;
         var count = 1 + (Math.random() < 0.5 ? 1 : 0);
         for (var i = 0; i < count; i++) {
-          var m = allMessages[Math.floor(Math.random() * allMessages.length)];
-          if (m) spawnMessage(m);
+          var idx;
+          if (allMessages.length === 1) {
+            idx = 0;
+          } else {
+            do { idx = Math.floor(Math.random() * allMessages.length); } while (idx === lastPicked);
+          }
+          lastPicked = idx;
+          spawnMessage(allMessages[idx]);
         }
       }
 
@@ -535,6 +543,8 @@
             seen[id] = true;
             var data = change.doc.data();
             if (!data.text) return;
+            if (knownTexts[data.text]) return;
+            knownTexts[data.text] = true;
             allMessages.push(data.text);
             if (!isFirst) spawnMessage(data.text);
           });
