@@ -124,25 +124,51 @@
 
     .minical {
       margin-top: 28px;
-      width: min(560px, 90vw);
+      width: min(520px, 90vw);
     }
 
     .minical-head {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 4px;
-      color: var(--muted);
-      font-size: clamp(11px, 1.6vw, 14px);
-      margin-bottom: 8px;
+      align-items: center;
+      margin-bottom: 10px;
     }
 
-    .minical-month {
+    .cal-nav {
+      width: 36px;
+      height: 36px;
+      font-size: 20px;
+      line-height: 1;
       color: var(--text);
-      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .cal-nav:hover:not(:disabled) {
+      background: rgba(79, 140, 255, 0.3);
+      box-shadow: 0 0 14px var(--glow);
+    }
+
+    .cal-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .cal-title {
+      font-size: clamp(14px, 2.2vw, 18px);
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
+    }
+
+    .minical-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: clamp(11px, 1.5vw, 13px);
+      opacity: 0.8;
     }
 
     .minical-week,
@@ -157,19 +183,6 @@
       color: var(--muted);
       font-size: clamp(10px, 1.4vw, 12px);
       padding: 2px 0;
-    }
-
-    .cal-block {
-      margin-bottom: 14px;
-    }
-
-    .cal-block-title {
-      color: var(--muted);
-      font-size: clamp(11px, 1.6vw, 13px);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 6px;
     }
 
     .cal-cell {
@@ -406,10 +419,15 @@
 
   <div class="minical">
     <div class="minical-head">
-      <span class="minical-month">Календарь отсчёта</span>
-      <span class="minical-note">зачёркнуты прошедшие дни</span>
+      <button type="button" class="cal-nav" id="cal-prev" disabled>‹</button>
+      <span class="cal-title" id="cal-title">—</span>
+      <button type="button" class="cal-nav" id="cal-next" disabled>›</button>
     </div>
-    <div class="minical-body" id="cal-body"></div>
+    <div class="minical-week">
+      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+    </div>
+    <div class="minical-grid" id="cal-grid"></div>
+    <div class="minical-note">зачёркнуты прошедшие дни</div>
   </div>
 
   <p class="target" id="target"></p>
@@ -623,74 +641,85 @@
 
   <script>
     (function () {
-      var body = document.getElementById('cal-body');
-      if (!body) return;
-
-      var now = new Date();
-      var todayYear = now.getFullYear();
-      var todayMonth = now.getMonth();
-      var today = now.getDate();
+      var grid = document.getElementById('cal-grid');
+      var title = document.getElementById('cal-title');
+      var prevBtn = document.getElementById('cal-prev');
+      var nextBtn = document.getElementById('cal-next');
+      if (!grid || !title || !prevBtn || !nextBtn) return;
 
       var months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
         'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-      var WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-      var TARGET_YEAR = 2026;
-      var TARGET_MONTH = 9;
-      var TARGET_DAY = 16;
+      var END_YEAR = 2026;
+      var END_MONTH = 9;
+      var END_DAY = 16;
+
+      var viewMonths = [
+        { y: 2026, m: 8, from: 16, to: 30 },
+        { y: 2026, m: 9, from: 1, to: 16 }
+      ];
 
       function isPast(y, m, d) {
-        if (y < todayYear) return true;
-        if (y > todayYear) return false;
-        if (m < todayMonth) return true;
-        if (m > todayMonth) return false;
-        return d < today;
+        var now = new Date();
+        var cy = now.getFullYear();
+        var cm = now.getMonth();
+        var cd = now.getDate();
+        if (y < cy) return true;
+        if (y > cy) return false;
+        if (m < cm) return true;
+        if (m > cm) return false;
+        return d < cd;
       }
 
       function isToday(y, m, d) {
-        return y === todayYear && m === todayMonth && d === today;
+        var now = new Date();
+        return y === now.getFullYear() &&
+          m === now.getMonth() &&
+          d === now.getDate();
       }
 
-      function buildMonth(y, m, fromDay, toDay) {
-        var block = document.createElement('div');
-        block.className = 'cal-block';
+      var idx = (function () {
+        var now = new Date();
+        for (var i = 0; i < viewMonths.length; i++) {
+          var vm = viewMonths[i];
+          if (now.getFullYear() === vm.y && now.getMonth() === vm.m) return i;
+        }
+        return 0;
+      })();
 
-        var title = document.createElement('div');
-        title.className = 'cal-block-title';
+      function emptyCell() {
+        var c = document.createElement('div');
+        c.className = 'cal-cell empty';
+        return c;
+      }
+
+      function render() {
+        var vm = viewMonths[idx];
+        var y = vm.y;
+        var m = vm.m;
+
         title.textContent = months[m] + ' ' + y;
-        block.appendChild(title);
+        prevBtn.disabled = idx <= 0;
+        nextBtn.disabled = idx >= viewMonths.length - 1;
 
-        var head = document.createElement('div');
-        head.className = 'minical-week';
-        WEEK.forEach(function (wn) {
-          var div = document.createElement('div');
-          div.textContent = wn;
-          head.appendChild(div);
-        });
-        block.appendChild(head);
+        grid.innerHTML = '';
 
-        var grid = document.createElement('div');
-        grid.className = 'minical-grid';
+        var firstDay = Math.max(1, vm.from);
+        var lastDay = Math.min(new Date(y, m + 1, 0).getDate(), vm.to);
+        var leading = (new Date(y, m, firstDay).getDay() + 6) % 7;
 
-        var firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
-        var daysInMonth = new Date(y, m + 1, 0).getDate();
-
-        for (var i = 0; i < firstDow; i++) {
-          var empty = document.createElement('div');
-          empty.className = 'cal-cell empty';
-          grid.appendChild(empty);
+        for (var i = 0; i < leading; i++) {
+          grid.appendChild(emptyCell());
         }
 
-        for (var d = 1; d <= daysInMonth; d++) {
+        for (var d = firstDay; d <= lastDay; d++) {
           var cell = document.createElement('div');
           var cls = 'cal-cell';
-          if (d < fromDay || d > toDay) {
-            cls += ' empty';
-          } else if (isPast(y, m, d)) {
+          if (isPast(y, m, d)) {
             cls += ' past';
           } else if (isToday(y, m, d)) {
             cls += ' today';
-          } else if (y === TARGET_YEAR && m === TARGET_MONTH && d === TARGET_DAY) {
+          } else if (y === END_YEAR && m === END_MONTH && d === END_DAY) {
             cls += ' target';
           }
           cell.className = cls;
@@ -698,12 +727,23 @@
           grid.appendChild(cell);
         }
 
-        block.appendChild(grid);
-        return block;
+        var rem = grid.children.length % 7;
+        if (rem) {
+          for (var j = 0; j < 7 - rem; j++) {
+            grid.appendChild(emptyCell());
+          }
+        }
       }
 
-      body.appendChild(buildMonth(2026, 8, 16, 30));
-      body.appendChild(buildMonth(2026, 9, 1, 16));
+      prevBtn.addEventListener('click', function () {
+        if (idx > 0) { idx--; render(); }
+      });
+
+      nextBtn.addEventListener('click', function () {
+        if (idx < viewMonths.length - 1) { idx++; render(); }
+      });
+
+      render();
     })();
   </script>
 </body>
