@@ -257,8 +257,6 @@
         ticks: document.getElementById('ticks')
       };
 
-      var tickCount = 0;
-
       try {
         var reloadCount = parseInt(localStorage.getItem('countdown-reloads') || '0', 10) + 1;
         localStorage.setItem('countdown-reloads', String(reloadCount));
@@ -266,6 +264,7 @@
         reloadCount = 1;
       }
       els.reloads.textContent = reloadCount;
+      els.ticks.textContent = reloadCount;
 
       function pad(n) {
         return String(n).padStart(2, '0');
@@ -294,8 +293,6 @@
       }
 
       function tick() {
-        tickCount++;
-        els.ticks.textContent = tickCount;
         var diff = TARGET.getTime() - Date.now();
 
         if (diff <= 0) {
