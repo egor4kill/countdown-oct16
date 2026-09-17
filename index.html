@@ -113,6 +113,48 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .progress {
+      margin-top: 36px;
+      width: min(560px, 90vw);
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: clamp(12px, 1.7vw, 15px);
+      letter-spacing: 0.05em;
+    }
+
+    .progress-percent {
+      color: var(--text);
+      font-size: clamp(18px, 3vw, 26px);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 20px var(--glow);
+    }
+
+    .progress-track {
+      height: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--accent), #a78bff);
+      border-radius: 999px;
+      box-shadow: 0 0 24px var(--glow);
+      transition: width 1s linear;
+    }
+
     .done {
       display: none;
       font-size: clamp(24px, 5vw, 42px);
@@ -124,7 +166,8 @@
     }
 
     body.finished .timer,
-    body.finished .target { display: none; }
+    body.finished .target,
+    body.finished .progress { display: none; }
     body.finished .done { display: block; }
   </style>
 </head>
@@ -153,10 +196,22 @@
 
   <div class="done">Время пришло — 16 октября 2026!</div>
 
+  <div class="progress">
+    <div class="progress-info">
+      <span>16 сентября 2026</span>
+      <span class="progress-percent" id="percent">100%</span>
+      <span>16 октября 2026</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="fill"></div>
+    </div>
+  </div>
+
   <p class="target" id="target"></p>
 
   <script>
     (function () {
+      var START = new Date(2026, 8, 16, 0, 0, 0, 0);
       var TARGET = new Date(2026, 9, 16, 23, 59, 59, 0);
 
       var els = {
@@ -164,7 +219,9 @@
         hours: document.getElementById('hours'),
         minutes: document.getElementById('minutes'),
         seconds: document.getElementById('seconds'),
-        target: document.getElementById('target')
+        target: document.getElementById('target'),
+        percent: document.getElementById('percent'),
+        fill: document.getElementById('fill')
       };
 
       function pad(n) {
@@ -179,12 +236,18 @@
       }
 
       function tick() {
-        var diff = TARGET.getTime() - Date.now();
+        var now = Date.now();
+        var diff = TARGET.getTime() - now;
+        var total = TARGET.getTime() - START.getTime();
 
         if (diff <= 0) {
           document.body.classList.add('finished');
           return;
         }
+
+        var remaining = Math.max(0, Math.min(100, (diff / total) * 100));
+        els.percent.textContent = remaining.toFixed(1) + '%';
+        els.fill.style.width = remaining.toFixed(3) + '%';
 
         var seconds = Math.floor(diff / 1000);
 
