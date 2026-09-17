@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ — сообщения</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+      color: #eef2ff;
+      background:
+        radial-gradient(900px 500px at 20% -10%, rgba(79, 140, 255, 0.18), transparent 60%),
+        #0b1020;
+      padding: 32px 20px;
+    }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: clamp(22px, 4vw, 32px);
+      margin-bottom: 6px;
+    }
+
+    .note {
+      color: #8ea0c8;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 12px 22px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(90deg, #4f8cff, #a78bff);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .btn.small {
+      padding: 6px 12px;
+      font-size: 13px;
+      background: linear-gradient(90deg, #ff4f6d, #a7488b);
+    }
+
+    .status { margin-bottom: 16px; color: #8ea0c8; font-size: 14px; }
+
+    .msg {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+
+    .msg .text { flex: 1; }
+
+    .msg .date {
+      color: #8ea0c8;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .empty { color: #8ea0c8; font-style: italic; }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #8ea0c8;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .access {
+      background: rgba(255, 77, 109, 0.12);
+      border: 1px solid rgba(255, 77, 109, 0.4);
+      border-radius: 12px;
+      padding: 18px;
+      color: #ffb3c0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">← на главную</a>
+    <h1>Админ: сообщения</h1>
+    <p class="note">Залогиньтесь через Google — только аккаунт <strong>egorgubarenko8@gmail.com</strong> может удалять.</p>
+
+    <div class="status" id="status">Загрузка...</div>
+
+    <div id="auth-box" hidden>
+      <button class="btn" id="login">Войти через Google</button>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    (function () {
+      var firebaseConfig = {
+        apiKey: "AIzaSyApLs9TpX6m1zuHgwouM8Ot0qgN2gD3v0A",
+        authDomain: "sanya-1bd30.firebaseapp.com",
+        projectId: "sanya-1bd30",
+        storageBucket: "sanya-1bd30.firebasestorage.app",
+        messagingSenderId: "437851305114",
+        appId: "1:437851305114:web:110928e67e982c6b86db23",
+        measurementId: "G-FVRRQTDD7K"
+      };
+
+      var ADMIN_EMAIL = 'egorgubarenko8@gmail.com';
+
+      var app = firebase.initializeApp(firebaseConfig);
+      var auth = firebase.auth(app);
+      var db = firebase.firestore(app);
+
+      var status = document.getElementById('status');
+      var authBox = document.getElementById('auth-box');
+      var loginBtn = document.getElementById('login');
+      var list = document.getElementById('list');
+
+      function fmtDate(t) {
+        if (!t) return '—';
+        var d = t.toDate();
+        return d.toLocaleString('ru-RU', {
+          day: 'numeric', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+      }
+
+      var unsubscribe = null;
+
+      function render(messages) {
+        list.innerHTML = '';
+
+        if (!messages.length) {
+          list.innerHTML = '<div class="empty">Сообщений пока нет.</div>';
+          return;
+        }
+
+        messages.forEach(function (m) {
+          var row = document.createElement('div');
+          row.className = 'msg';
+
+          var text = document.createElement('div');
+          text.className = 'text';
+          text.textContent = m.text;
+
+          var date = document.createElement('div');
+          date.className = 'date';
+          date.textContent = fmtDate(m.createdAt);
+
+          var del = document.createElement('button');
+          del.className = 'btn small';
+          del.textContent = 'Удалить';
+          del.addEventListener('click', function () {
+            if (!confirm('Удалить сообщение?')) return;
+            db.collection('messages').doc(m.id).delete()
+              .catch(function (err) {
+                alert('Не удалось: ' + err.message);
+              });
+          });
+
+          row.appendChild(text);
+          row.appendChild(date);
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+      }
+
+      function startListening() {
+        if (unsubscribe) unsubscribe();
+
+        unsubscribe = db.collection('messages')
+          .orderBy('createdAt', 'desc')
+          .onSnapshot(function (snap) {
+            var messages = [];
+            snap.forEach(function (doc) {
+              messages.push({ id: doc.id, text: doc.data().text, createdAt: doc.data().createdAt });
+            });
+            render(messages);
+          }, function (err) {
+            status.textContent = 'Ошибка чтения: ' + err.message;
+          });
+      }
+
+      function updateUser(user) {
+        if (user && user.email === ADMIN_EMAIL) {
+          status.textContent = 'Вы вошли как ' + user.email + ' — можно удалять.';
+          authBox.hidden = true;
+          startListening();
+        } else if (user) {
+          status.textContent = 'Вы вошли как ' + (user.email || '?') + ' — недостаточно прав.';
+          authBox.hidden = true;
+          list.innerHTML = '<div class="access">Доступ только для egorgubarenko8@gmail.com.</div>';
+          if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+        } else {
+          status.textContent = 'Войдите для просмотра и удаления сообщений.';
+          authBox.hidden = false;
+          list.innerHTML = '';
+        }
+      }
+
+      loginBtn.addEventListener('click', function () {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(function (err) {
+          status.textContent = 'Ошибка входа: ' + err.message;
+        });
+      });
+
+      auth.onAuthStateChanged(function (user) {
+        updateUser(user);
+      });
+    })();
+  </script>
+</body>
+</html>

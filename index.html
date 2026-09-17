@@ -178,6 +178,101 @@
     body.finished .target,
     body.finished .progress { display: none; }
     body.finished .done { display: block; }
+
+    .composer {
+      margin-top: 36px;
+      display: flex;
+      gap: 10px;
+      width: min(560px, 90vw);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .composer input {
+      flex: 1 1 320px;
+      padding: 14px 18px;
+      font-size: clamp(14px, 2vw, 17px);
+      font-family: inherit;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      outline: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .composer input::placeholder { color: var(--muted); }
+
+    .composer input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--glow);
+    }
+
+    .composer button {
+      padding: 14px 26px;
+      font-size: clamp(14px, 2vw, 17px);
+      font-family: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(90deg, var(--accent), #a78bff);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 0 18px var(--glow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .composer button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 28px var(--glow);
+    }
+
+    .composer button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .rain {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .rain-msg {
+      position: absolute;
+      top: -60px;
+      white-space: nowrap;
+      max-width: 70vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+      color: #eef2ff;
+      text-shadow: 0 0 12px rgba(79, 140, 255, 0.9), 0 2px 6px rgba(0, 0, 0, 0.7);
+      opacity: 0;
+      animation: rain-fall linear forwards;
+      word-break: break-word;
+    }
+
+    @keyframes rain-fall {
+      0%   { transform: translateY(0) rotate(-6deg); opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 1; }
+      100% { transform: translateY(115vh) rotate(4deg); opacity: 0; }
+    }
+
+    .admin-link {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: clamp(11px, 1.5vw, 13px);
+      opacity: 0.7;
+    }
+
+    .admin-link a {
+      color: inherit;
+    }
   </style>
 </head>
 <body>
@@ -218,6 +313,15 @@
   </div>
 
   <p class="target" id="target"></p>
+
+  <form class="composer" id="composer">
+    <input type="text" id="msg-input" maxlength="200" placeholder="Напишите что-нибудь..." autocomplete="off">
+    <button type="submit" id="msg-send">Отправить</button>
+  </form>
+
+  <p class="admin-link"><a href="admin.html">admin</a></p>
+
+  <div class="rain" id="rain"></div>
 
   <script>
     (function () {
@@ -287,6 +391,91 @@
 
       updateProgress();
       setInterval(updateProgress, 100);
+    })();
+  </script>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    (function () {
+      var firebaseConfig = {
+        apiKey: "AIzaSyApLs9TpX6m1zuHgwouM8Ot0qgN2gD3v0A",
+        authDomain: "sanya-1bd30.firebaseapp.com",
+        projectId: "sanya-1bd30",
+        storageBucket: "sanya-1bd30.firebasestorage.app",
+        messagingSenderId: "437851305114",
+        appId: "1:437851305114:web:110928e67e982c6b86db23",
+        measurementId: "G-FVRRQTDD7K"
+      };
+
+      var app = firebase.initializeApp(firebaseConfig);
+      var db = firebase.firestore(app);
+
+      var compos = document.getElementById('composer');
+      var input = document.getElementById('msg-input');
+      var send = document.getElementById('msg-send');
+      var rain = document.getElementById('rain');
+      var seen = {};
+
+      function spawnMessage(text) {
+        var el = document.createElement('div');
+        el.className = 'rain-msg';
+        el.textContent = text;
+
+        var size = 16 + Math.floor(Math.random() * 18);
+        var left = 2 + Math.random() * 88;
+        var duration = 6 + Math.random() * 8;
+        var delay = Math.random() * 3;
+
+        el.style.left = left + 'vw';
+        el.style.fontSize = size + 'px';
+        el.style.animationDuration = duration + 's';
+        el.style.animationDelay = delay + 's';
+
+        rain.appendChild(el);
+        setTimeout(function () { el.remove(); }, (duration + delay + 1) * 1000);
+      }
+
+      function addMessage(text) {
+        return firebase.firestore().collection('messages').add({
+          text: text,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      compos.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var text = input.value.trim();
+        if (!text) return;
+
+        send.disabled = true;
+        addMessage(text)
+          .then(function () {
+            input.value = '';
+            send.disabled = false;
+          })
+          .catch(function (err) {
+            console.error(err);
+            alert('Не удалось отправить: ' + err.message);
+            send.disabled = false;
+          });
+      });
+
+      db.collection('messages')
+        .orderBy('createdAt', 'asc')
+        .limitToLast(30)
+        .onSnapshot(function (snap) {
+          snap.docChanges().forEach(function (change) {
+            if (change.type !== 'added') return;
+            var id = change.doc.id;
+            if (seen[id]) return;
+            seen[id] = true;
+            var data = change.doc.data();
+            if (data.text) spawnMessage(data.text);
+          });
+        }, function (err) {
+          console.error('listen error', err);
+        });
     })();
   </script>
 </body>
