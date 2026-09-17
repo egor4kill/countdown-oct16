@@ -416,6 +416,7 @@
       var send = document.getElementById('msg-send');
       var rain = document.getElementById('rain');
       var seen = {};
+      var allMessages = [];
 
       function spawnMessage(text) {
         var el = document.createElement('div');
@@ -461,6 +462,12 @@
           });
       });
 
+      function spawnRandom() {
+        if (!allMessages.length) return;
+        var m = allMessages[Math.floor(Math.random() * allMessages.length)];
+        spawnMessage(m);
+      }
+
       db.collection('messages')
         .orderBy('createdAt', 'asc')
         .limitToLast(30)
@@ -471,11 +478,15 @@
             if (seen[id]) return;
             seen[id] = true;
             var data = change.doc.data();
-            if (data.text) spawnMessage(data.text);
+            if (!data.text) return;
+            allMessages.push(data.text);
+            spawnMessage(data.text);
           });
         }, function (err) {
           console.error('listen error', err);
         });
+
+      setInterval(spawnRandom, 3000);
     })();
   </script>
 </body>
