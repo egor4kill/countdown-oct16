@@ -278,6 +278,44 @@
     .admin-link a {
       color: inherit;
     }
+
+    .share-row {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sharebtn {
+      padding: 10px 22px;
+      font-size: clamp(13px, 2vw, 15px);
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(79, 140, 255, 0.22);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .sharebtn:hover {
+      transform: translateY(-2px);
+      background: rgba(79, 140, 255, 0.35);
+      box-shadow: 0 0 20px var(--glow);
+    }
+
+    .toast {
+      color: #7dffb0;
+      font-size: clamp(12px, 1.6vw, 14px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.visible { opacity: 1; }
   </style>
 </head>
 <body>
@@ -323,6 +361,11 @@
     <input type="text" id="msg-input" maxlength="200" placeholder="Напишите что-нибудь..." autocomplete="off">
     <button type="submit" id="msg-send">Отправить</button>
   </form>
+
+  <div class="share-row">
+    <button type="button" class="sharebtn" id="share">Поделиться</button>
+    <span class="toast" id="toast"></span>
+  </div>
 
   <p class="admin-link"><a href="admin.html">admin</a></p>
 
@@ -480,7 +523,7 @@
 
       db.collection('messages')
         .orderBy('createdAt', 'asc')
-        .limitToLast(200)
+        .limitToLast(1000)
         .onSnapshot(function (snap) {
           var isFirst = firstSnapshot;
           firstSnapshot = false;
@@ -506,6 +549,54 @@
         });
 
       setInterval(spawnRandom, 1400);
+
+      var shareBtn = document.getElementById('share');
+      var toast = document.getElementById('toast');
+      var SITE = 'https://egor4kill.github.io/countdown-oct16/';
+
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('visible');
+        setTimeout(function () { toast.classList.remove('visible'); }, 2600);
+      }
+
+      function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Текст и ссылка скопированы');
+        } catch (e) {
+          showToast('Сайт: ' + SITE);
+        }
+        document.body.removeChild(ta);
+      }
+
+      function buildShareText() {
+        var days = els.days.textContent;
+        return 'До 16 октября 2026 осталось ' + days + ' дней! Сейчас ' + els.percent.textContent +
+          ' времени пройдено. Смотри таймер: ' + SITE;
+      }
+
+      shareBtn.addEventListener('click', function () {
+        var text = buildShareText();
+
+        if (navigator.share) {
+          navigator.share({ title: 'Обратный отсчёт до 16 октября', text: text, url: SITE })
+            .catch(function () {});
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(
+            function () { showToast('Текст и ссылка скопированы'); },
+            function () { fallbackCopy(text); }
+          );
+        } else {
+          fallbackCopy(text);
+        }
+      });
     })();
   </script>
 </body>
