@@ -241,7 +241,7 @@
       z-index: 5;
     }
 
-    .subtitle, h1, .timer, .done, .progress, .composer, .admin-link, .target {
+    .subtitle, h1, .timer, .done, .progress, .composer, .share-row, .admin-link, .target {
       position: relative;
       z-index: 10;
     }
@@ -466,7 +466,8 @@
       var seen = {};
       var knownTexts = {};
       var allMessages = [];
-      var lastPicked = -1;
+      var order = [];
+      var pos = 0;
 
       function spawnMessage(text) {
         var el = document.createElement('div');
@@ -512,19 +513,25 @@
           });
       });
 
-      function spawnRandom() {
-        if (!allMessages.length) return;
-        var count = 1 + (Math.random() < 0.5 ? 1 : 0);
-        for (var i = 0; i < count; i++) {
-          var idx;
-          if (allMessages.length === 1) {
-            idx = 0;
-          } else {
-            do { idx = Math.floor(Math.random() * allMessages.length); } while (idx === lastPicked);
-          }
-          lastPicked = idx;
-          spawnMessage(allMessages[idx]);
+      function refillOrder() {
+        order = allMessages.slice();
+        for (var i = order.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = order[i]; order[i] = order[j]; order[j] = t;
         }
+        pos = 0;
+      }
+
+      function spawnOne() {
+        if (!allMessages.length) return;
+        if (pos >= order.length) refillOrder();
+        spawnMessage(order[pos % order.length]);
+        pos++;
+      }
+
+      function spawnRandom() {
+        spawnOne();
+        if (Math.random() < 0.6) spawnOne();
       }
 
       var firstSnapshot = true;
@@ -559,18 +566,34 @@
         });
 
       setInterval(spawnRandom, 1400);
+    })();
+  </script>
 
-      var shareBtn = document.getElementById('share');
+  <script>
+    (function () {
+      var btn = document.getElementById('share');
       var toast = document.getElementById('toast');
+      if (!btn || !toast) return;
+
       var SITE = 'https://egor4kill.github.io/countdown-oct16/';
 
-      function showToast(msg) {
+      function getDays() {
+        var d = document.getElementById('days');
+        return d ? d.textContent : '?';
+      }
+
+      function getPct() {
+        var p = document.getElementById('percent');
+        return p ? p.textContent : '';
+      }
+
+      function show(msg) {
         toast.textContent = msg;
         toast.classList.add('visible');
         setTimeout(function () { toast.classList.remove('visible'); }, 2600);
       }
 
-      function fallbackCopy(text) {
+      function legacyCopy(text) {
         var ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed';
@@ -579,32 +602,38 @@
         ta.select();
         try {
           document.execCommand('copy');
-          showToast('Текст и ссылка скопированы');
+          show('Текст и ссылка скопированы');
         } catch (e) {
-          showToast('Сайт: ' + SITE);
+          show('Скопируйте вручную: ' + SITE);
         }
         document.body.removeChild(ta);
       }
 
-      function buildShareText() {
-        var days = els.days.textContent;
-        return 'До 16 октября 2026 осталось ' + days + ' дней! Сейчас ' + els.percent.textContent +
-          ' времени пройдено. Смотри таймер: ' + SITE;
-      }
-
-      shareBtn.addEventListener('click', function () {
-        var text = buildShareText();
-
-        if (navigator.share) {
-          navigator.share({ title: 'Обратный отсчёт до 16 октября', text: text, url: SITE })
-            .catch(function () {});
-        } else if (navigator.clipboard) {
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(
-            function () { showToast('Текст и ссылка скопированы'); },
-            function () { fallbackCopy(text); }
+            function () { show('Текст и ссылка скопированы'); },
+            function () { legacyCopy(text); }
           );
         } else {
-          fallbackCopy(text);
+          legacyCopy(text);
+        }
+      }
+
+      btn.addEventListener('click', function () {
+        try {
+          var text = 'До 16 октября 2026 осталось ' + getDays() + ' дней! ' +
+            (getPct() ? 'Прогресс: ' + getPct() + '. ' : '') +
+            'Смотри таймер: ' + SITE;
+
+          if (navigator.share) {
+            navigator.share({ title: 'Обратный отсчёт до 16 октября 2026', text: text, url: SITE })
+              .catch(function () { copyText(text); });
+          } else {
+            copyText(text);
+          }
+        } catch (e) {
+          copyText(SITE);
         }
       });
     })();
