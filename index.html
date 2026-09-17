@@ -152,7 +152,7 @@
       background: linear-gradient(90deg, var(--accent), #a78bff);
       border-radius: 999px;
       box-shadow: 0 0 24px var(--glow);
-      transition: width 1s linear;
+      transition: width 0.15s linear;
     }
 
     .done {
@@ -235,7 +235,7 @@
         });
       }
 
-      function tick() {
+      function updateProgress() {
         var now = Date.now();
         var diff = TARGET.getTime() - now;
         var total = TARGET.getTime() - START.getTime();
@@ -248,6 +248,15 @@
         var remaining = Math.max(0, Math.min(100, (diff / total) * 100));
         els.percent.textContent = remaining.toFixed(1) + '%';
         els.fill.style.width = remaining.toFixed(3) + '%';
+      }
+
+      function tick() {
+        var diff = TARGET.getTime() - Date.now();
+
+        if (diff <= 0) {
+          document.body.classList.add('finished');
+          return;
+        }
 
         var seconds = Math.floor(diff / 1000);
 
@@ -261,6 +270,9 @@
 
       tick();
       setInterval(tick, 1000);
+
+      updateProgress();
+      setInterval(updateProgress, 100);
     })();
   </script>
 </body>
