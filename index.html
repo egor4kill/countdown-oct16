@@ -174,21 +174,6 @@
       color: transparent;
     }
 
-    .stats {
-      margin-top: 40px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px 32px;
-      color: var(--muted);
-      font-size: clamp(12px, 1.6vw, 14px);
-    }
-
-    .stats strong {
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-
     body.finished .timer,
     body.finished .target,
     body.finished .progress { display: none; }
@@ -234,11 +219,6 @@
 
   <p class="target" id="target"></p>
 
-  <div class="stats">
-    <span>Перезагрузок страницы: <strong id="reloads">0</strong></span>
-    <span>Проверок таймера: <strong id="ticks">0</strong></span>
-  </div>
-
   <script>
     (function () {
       var START = new Date(2026, 8, 16, 0, 0, 0, 0);
@@ -252,19 +232,8 @@
         ms: document.getElementById('ms'),
         target: document.getElementById('target'),
         percent: document.getElementById('percent'),
-        fill: document.getElementById('fill'),
-        reloads: document.getElementById('reloads'),
-        ticks: document.getElementById('ticks')
+        fill: document.getElementById('fill')
       };
-
-      try {
-        var reloadCount = parseInt(localStorage.getItem('countdown-reloads') || '0', 10) + 1;
-        localStorage.setItem('countdown-reloads', String(reloadCount));
-      } catch (e) {
-        reloadCount = 1;
-      }
-      els.reloads.textContent = reloadCount;
-      els.ticks.textContent = reloadCount;
 
       function pad(n) {
         return String(n).padStart(2, '0');
