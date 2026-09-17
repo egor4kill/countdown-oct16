@@ -122,49 +122,78 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .daystats {
+    .minical {
       margin-top: 28px;
       width: min(560px, 90vw);
     }
 
-    .daystats-info {
+    .minical-head {
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px;
       color: var(--muted);
-      font-size: clamp(11px, 1.5vw, 13px);
-      letter-spacing: 0.06em;
-      margin-bottom: 10px;
+      font-size: clamp(11px, 1.6vw, 14px);
+      margin-bottom: 8px;
     }
 
-    .daygrid {
+    .minical-month {
+      color: var(--text);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .minical-week,
+    .minical-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(16px, 1fr));
+      grid-template-columns: repeat(7, 1fr);
       gap: 6px;
     }
 
-    .daycell {
+    .minical-week div {
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(10px, 1.4vw, 12px);
+      padding: 2px 0;
+    }
+
+    .cal-cell {
       aspect-ratio: 1;
-      border-radius: 5px;
-      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(11px, 1.6vw, 14px);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border);
-      transition: background 0.3s ease, box-shadow 0.3s ease;
+      color: var(--text);
     }
 
-    .daycell.done {
-      background: linear-gradient(135deg, var(--accent), #a78bff);
+    .cal-cell.empty {
+      background: transparent;
       border-color: transparent;
-      box-shadow: 0 0 8px var(--glow);
     }
 
-    .daycell.today {
+    .cal-cell.past {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      opacity: 0.55;
+    }
+
+    .cal-cell.today {
       box-shadow: inset 0 0 0 2px #fff, 0 0 12px var(--glow);
     }
 
-    .total-msgs {
-      margin-top: 26px;
-      color: var(--muted);
-      font-size: clamp(12px, 1.6vw, 14px);
-      letter-spacing: 0.04em;
+    .cal-cell.target {
+      background: linear-gradient(135deg, var(--accent), #a78bff);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 0 12px var(--glow);
     }
 
     .progress {
@@ -286,7 +315,7 @@
       z-index: 5;
     }
 
-    .subtitle, h1, .timer, .done, .progress, .daystats, .total-msgs, .composer, .admin-link, .target {
+    .subtitle, h1, .timer, .done, .progress, .minical, .composer, .admin-link, .target {
       position: relative;
       z-index: 10;
     }
@@ -362,18 +391,18 @@
     </div>
   </div>
 
-  <div class="daystats">
-    <div class="daystats-info">
-      <span>16 сентября</span>
-      <span id="daystat-text">—</span>
-      <span>16 октября</span>
+  <div class="minical">
+    <div class="minical-head">
+      <span class="minical-month" id="cal-month">—</span>
+      <span class="minical-note">зачёркнуты прошедшие дни</span>
     </div>
-    <div class="daygrid" id="daygrid"></div>
+    <div class="minical-week">
+      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+    </div>
+    <div class="minical-grid" id="cal-grid"></div>
   </div>
 
   <p class="target" id="target"></p>
-
-  <p class="total-msgs" id="total-msgs"></p>
 
   <form class="composer" id="composer">
     <input type="text" id="msg-input" maxlength="200" placeholder="Напишите что-нибудь..." autocomplete="off">
@@ -508,17 +537,6 @@
         });
       }
 
-      var totalMsgsEl = document.getElementById('total-msgs');
-
-      function refreshCount() {
-        if (!totalMsgsEl) return;
-        db.collection('messages').count().get().then(function (snap) {
-          totalMsgsEl.textContent = 'Всего написано сообщений: ' + snap.data().count;
-        }).catch(function () {});
-      }
-
-      refreshCount();
-
       compos.addEventListener('submit', function (e) {
         e.preventDefault();
         var text = input.value.trim();
@@ -529,7 +547,6 @@
           .then(function () {
             input.value = '';
             send.disabled = false;
-            refreshCount();
           })
           .catch(function (err) {
             console.error(err);
@@ -596,28 +613,41 @@
 
   <script>
     (function () {
-      var START = new Date(2026, 8, 16, 0, 0, 0, 0);
-      var TARGET = new Date(2026, 9, 16, 23, 59, 59, 0);
+      var grid = document.getElementById('cal-grid');
+      var monthEl = document.getElementById('cal-month');
+      if (!grid || !monthEl) return;
 
-      var grid = document.getElementById('daygrid');
-      var text = document.getElementById('daystat-text');
-      if (!grid || !text) return;
+      var now = new Date();
+      var year = now.getFullYear();
+      var month = now.getMonth();
+      var today = now.getDate();
+      var daysInMonth = new Date(year, month + 1, 0).getDate();
+      var firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
 
-      function dayUtc(d) { return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); }
+      var months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+      monthEl.textContent = months[month] + ' ' + year;
 
-      var sIdx = dayUtc(START);
-      var tIdx = dayUtc(TARGET);
-      var nIdx = dayUtc(new Date());
-      var totalCells = Math.round((tIdx - sIdx) / 86400000) + 1;
-      var passed = Math.max(0, Math.min(totalCells, Math.round((nIdx - sIdx) / 86400000) + 1));
-      var todayIdx = Math.min(passed - 1, totalCells - 1);
+      var TARGET_YEAR = 2026;
+      var TARGET_MONTH = 9;
+      var TARGET_DAY = 16;
 
-      for (var i = 0; i < totalCells; i++) {
-        var cell = document.createElement('div');
-        cell.className = 'daycell' + (i < passed ? ' done' : '') + (i === todayIdx ? ' today' : '');
-        grid.appendChild(cell);
+      for (var i = 0; i < firstDow; i++) {
+        var e = document.createElement('div');
+        e.className = 'cal-cell empty';
+        grid.appendChild(e);
       }
-      text.textContent = 'Прошло ' + passed + ' из ' + totalCells + ' дней';
+
+      for (var d = 1; d <= daysInMonth; d++) {
+        var c = document.createElement('div');
+        var cls = 'cal-cell';
+        if (d < today) cls += ' past';
+        if (d === today) cls += ' today';
+        if (year === TARGET_YEAR && month === TARGET_MONTH && d === TARGET_DAY) cls += ' target';
+        c.className = cls;
+        c.textContent = d;
+        grid.appendChild(c);
+      }
     })();
   </script>
 </body>
