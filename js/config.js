@@ -21,10 +21,8 @@
     POLL: {
       QUESTION: 'Каким будет 16 октября?',
       OPTIONS: [
-        { id: 'great', label: 'Всё сбудется' },
-        { id: 'usual', label: 'Обычный день' },
-        { id: 'chaos', label: 'Что-то пойдёт не так' },
-        { id: 'cake', label: 'Куплю торт' }
+        { id: 'yes', label: 'Да' },
+        { id: 'no', label: 'Нет' }
       ]
     }
   };
