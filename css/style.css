@@ -20,7 +20,7 @@ body {
   color: var(--text);
   background:
     linear-gradient(rgba(11, 16, 32, 0.72), rgba(11, 16, 32, 0.72)),
-    url("background.jpg") center / 100% 100% no-repeat fixed var(--bg);
+    url("../background.jpg") center / 100% 100% no-repeat fixed var(--bg);
   padding: 24px;
   text-align: center;
 }
