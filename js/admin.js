@@ -1,9 +1,10 @@
 (function () {
   'use strict';
 
-  var app = firebase.initializeApp(AppConfig.FIREBASE);
-  var auth = firebase.auth(app);
-  var db = firebase.firestore(app);
+  if (!window.__fbAuth || !window.__fbDB) return;
+
+  var auth = window.__fbAuth;
+  var db = window.__fbDB;
 
   var ADMIN_EMAIL = AppConfig.ADMIN_EMAIL;
 

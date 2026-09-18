@@ -1,6 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     match /messages/{document} {
       allow create: if request.resource.data.text is string
                     && request.resource.data.text.size() > 0
@@ -9,6 +10,24 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if request.auth != null
                     && request.auth.token.email == 'egorgubarenko8@gmail.com';
+    }
+
+    // Голосование: один голос на анонимного пользователя (doc id == uid).
+    // Переголосовать можно (update), но задублировать голос нельзя (create запрещён, если doc уже есть).
+    match /poll_votes/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.option is string
+                    && request.resource.data.option.size() > 0
+                    && request.resource.data.option.size() <= 64
+                    && !exists(/databases/$(database)/documents/poll_votes/$(uid));
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.option is string
+                    && request.resource.data.option.size() > 0
+                    && request.resource.data.option.size() <= 64;
+      allow delete: if false;
     }
   }
 }

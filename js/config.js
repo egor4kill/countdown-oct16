@@ -15,6 +15,25 @@
       messagingSenderId: "437851305114",
       appId: "1:437851305114:web:110928e67e982c6b86db23",
       measurementId: "G-FVRRQTDD7K"
+    },
+
+    // Опрос на главной. Один голос на посетителя (по анонимному UID).
+    POLL: {
+      QUESTION: 'Каким будет 16 октября?',
+      OPTIONS: [
+        { id: 'great', label: 'Всё сбудется' },
+        { id: 'usual', label: 'Обычный день' },
+        { id: 'chaos', label: 'Что-то пойдёт не так' },
+        { id: 'cake', label: 'Куплю торт' }
+      ]
     }
   };
+
+  // Общая инициализация Firebase (одна на страницу).
+  var app = firebase.initializeApp(AppConfig.FIREBASE);
+  window.__fbApp = app;
+  window.__fbDB = firebase.firestore(app);
+  if (typeof firebase.auth === 'function') {
+    window.__fbAuth = firebase.auth(app);
+  }
 })();

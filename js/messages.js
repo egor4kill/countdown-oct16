@@ -1,8 +1,9 @@
 (function () {
   'use strict';
 
-  var app = firebase.initializeApp(AppConfig.FIREBASE);
-  var db = firebase.firestore(app);
+  if (!window.__fbDB) return;
+
+  var db = window.__fbDB;
 
   var compos = document.getElementById('composer');
   var input = document.getElementById('msg-input');
