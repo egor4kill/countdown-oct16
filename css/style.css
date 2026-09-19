@@ -26,28 +26,25 @@ body {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  padding: 88px 24px 24px;
+  padding: 24px;
   text-align: center;
 }
 
 .tabs {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
+  display: inline-flex;
   gap: 6px;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 5px;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.07);
   border: 1px solid var(--border);
   border-radius: 999px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 .tab {
-  padding: 10px 24px;
+  appearance: none;
+  padding: 9px 26px;
   border: none;
   border-radius: 999px;
   background: transparent;
@@ -55,18 +52,23 @@ body {
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .tab:hover {
   color: var(--text);
 }
 
+.tab:active {
+  transform: scale(0.97);
+}
+
 .tab.is-active {
   color: #fff;
   background: linear-gradient(90deg, var(--accent), #a78bff);
-  box-shadow: 0 0 18px var(--glow);
+  box-shadow: 0 0 20px var(--glow);
 }
 
 .news-wrap {
