@@ -26,8 +26,88 @@ body {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  padding: 24px;
+  padding: 88px 24px 24px;
   text-align: center;
+}
+
+.tabs {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.tab {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.is-active {
+  color: #fff;
+  background: linear-gradient(90deg, var(--accent), #a78bff);
+  box-shadow: 0 0 18px var(--glow);
+}
+
+.news-wrap {
+  width: min(760px, 90vw);
+  text-align: left;
+}
+
+.empty {
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+}
+
+.news-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(8px);
+  text-align: left;
+}
+
+.news-date {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.news-card h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.news-card p {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #dce4ff;
+  word-break: break-word;
 }
 
 .subtitle {
