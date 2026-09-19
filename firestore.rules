@@ -33,7 +33,7 @@ service cloud.firestore {
     // Новости: читают все, пишут/удаляют только администратор.
     match /news/{document} {
       allow read: if true;
-      allow create, update: if request.auth != null
+      allow create: if request.auth != null
                     && request.auth.token.email == 'egorgubarenko8@gmail.com'
                     && request.resource.data.title is string
                     && request.resource.data.title.size() > 0
@@ -41,6 +41,18 @@ service cloud.firestore {
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 5000;
+      allow update: if request.auth != null
+                    && request.auth.token.email == 'egorgubarenko8@gmail.com'
+                    && (!('title' in request.resource.data)
+                        || (request.resource.data.title is string
+                            && request.resource.data.title.size() > 0
+                            && request.resource.data.title.size() <= 200))
+                    && (!('text' in request.resource.data)
+                        || (request.resource.data.text is string
+                            && request.resource.data.text.size() > 0
+                            && request.resource.data.text.size() <= 5000))
+                    && (!('pinned' in request.resource.data)
+                        || request.resource.data.pinned is bool);
       allow delete: if request.auth != null
                     && request.auth.token.email == 'egorgubarenko8@gmail.com';
     }

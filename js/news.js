@@ -29,32 +29,55 @@
   db.collection('news')
     .orderBy('createdAt', 'desc')
     .onSnapshot(function (snap) {
+      var items = [];
+      snap.forEach(function (doc) {
+        var data = doc.data();
+        if (!data.title) return;
+        items.push({
+          id: doc.id,
+          title: data.title,
+          text: data.text,
+          createdAt: data.createdAt,
+          pinned: data.pinned === true
+        });
+      });
+
+      items.sort(function (a, b) {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        var at = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+        var bt = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+        return bt - at;
+      });
+
       list.innerHTML = '';
 
-      if (snap.empty) {
+      if (!items.length) {
         list.innerHTML = '<div class="empty">Новостей пока нет.</div>';
         return;
       }
 
-      snap.forEach(function (doc) {
-        var data = doc.data();
-        if (!data.title) return;
-
+      items.forEach(function (news) {
         var card = document.createElement('article');
-        card.className = 'news-card';
+        card.className = 'news-card' + (news.pinned ? ' pinned' : '');
 
         var date = document.createElement('div');
         date.className = 'news-date';
-        date.textContent = fmtDate(data.createdAt);
+        date.textContent = fmtDate(news.createdAt);
+        if (news.pinned) {
+          var pinBadge = document.createElement('span');
+          pinBadge.className = 'pin-badge';
+          pinBadge.textContent = 'закреплено';
+          date.appendChild(pinBadge);
+        }
 
         var title = document.createElement('h2');
-        title.textContent = data.title;
+        title.textContent = news.title;
 
         card.appendChild(date);
         card.appendChild(title);
 
-        if (data.text) {
-          card.appendChild(renderMarkdown(data.text));
+        if (news.text) {
+          card.appendChild(renderMarkdown(news.text));
         }
 
         list.appendChild(card);

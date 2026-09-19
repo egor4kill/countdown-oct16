@@ -23,6 +23,7 @@
     <div id="news-admin" hidden>
       <h2 style="margin: 30px 0 12px;">Новости</h2>
       <div class="news-form">
+        <div id="news-draft" class="news-draft" hidden></div>
         <div class="news-toolbar">
           <button type="button" class="tool" data-wrap="**" data-close="**">Жирный</button>
           <button type="button" class="tool" data-wrap="*" data-close="*">Курсив</button>
@@ -33,9 +34,10 @@
           <input type="file" id="news-img" accept="image/*" hidden>
         </div>
         <input type="text" id="news-title" maxlength="200" placeholder="Заголовок">
-        <textarea id="news-text" maxlength="5000" rows="4" placeholder="Текст новости (поддерживается форматирование)"></textarea>
+        <textarea id="news-text" maxlength="5000" rows="4" placeholder="Текст новости — можно вставить картинку через Ctrl+V или перетащить файл"></textarea>
         <div class="news-actions">
           <button class="btn" id="news-publish">Опубликовать</button>
+          <button class="btn ghost" id="news-edit-cancel" type="button" hidden>Отменить правку</button>
           <button class="btn ghost" id="news-preview-btn" type="button">Предпросмотр</button>
         </div>
         <div class="news-preview" id="news-preview-box" hidden></div>
