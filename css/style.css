@@ -77,6 +77,10 @@ body {
   align-items: center;
 }
 
+.tab-panel[hidden] {
+  display: none;
+}
+
 .news-wrap {
   width: min(760px, 90vw);
   text-align: left;
