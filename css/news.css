@@ -1,0 +1,73 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  color: #eef2ff;
+  background:
+    radial-gradient(900px 500px at 20% -10%, rgba(79, 140, 255, 0.18), transparent 60%),
+    linear-gradient(rgba(11, 16, 32, 0.6), rgba(11, 16, 32, 0.6)),
+    url("../background.jpg") center / 100% 100% no-repeat fixed #0b1020;
+  padding: 32px 20px;
+}
+
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #8ea0c8;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.subtitle {
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8ea0c8;
+  margin-bottom: 6px;
+}
+
+h1 {
+  font-size: clamp(24px, 5vw, 38px);
+  margin-bottom: 28px;
+}
+
+.news-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(8px);
+}
+
+.news-date {
+  color: #8ea0c8;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.news-card h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.news-card p {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #dce4ff;
+  word-break: break-word;
+}
+
+.empty {
+  color: #8ea0c8;
+  font-style: italic;
+  padding: 12px 0;
+}

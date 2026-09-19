@@ -19,6 +19,16 @@
     </div>
 
     <div id="list"></div>
+
+    <div id="news-admin" hidden>
+      <h2 style="margin: 30px 0 12px;">Новости</h2>
+      <div class="news-form">
+        <input type="text" id="news-title" maxlength="200" placeholder="Заголовок">
+        <textarea id="news-text" maxlength="5000" rows="4" placeholder="Текст новости"></textarea>
+        <button class="btn" id="news-publish">Опубликовать</button>
+      </div>
+      <div id="news-admin-list" style="margin-top: 18px;"></div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
