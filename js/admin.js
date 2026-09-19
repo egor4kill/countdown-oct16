@@ -522,8 +522,9 @@
       if (settled) return;
       settled = true;
       task.cancel();
-      fail(new Error('Таймаут загрузки (90 с). Проверьте интернет и правила Storage ' +
-        '(firebase deploy --only storage).'));
+      console.error('Upload timeout. Bucket:', AppConfig.FIREBASE.storageBucket, 'File:', file.name, 'Size:', file.size);
+      fail(new Error('Таймаут загрузки (90 с). Обновите страницу (Ctrl+F5) и проверьте, что Storage ' +
+        'включён в консоли проекта.'));
     }, 90000);
     task.then(function () {
       if (settled) return;
