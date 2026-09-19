@@ -11,7 +11,7 @@
       apiKey: "AIzaSyApLs9TpX6m1zuHgwouM8Ot0qgN2gD3v0A",
       authDomain: "sanya-1bd30.firebaseapp.com",
       projectId: "sanya-1bd30",
-      storageBucket: "sanya-1bd30.firebasestorage.app",
+      storageBucket: "sanya-1bd30.appspot.com",
       messagingSenderId: "437851305114",
       appId: "1:437851305114:web:110928e67e982c6b86db23",
       measurementId: "G-FVRRQTDD7K"
