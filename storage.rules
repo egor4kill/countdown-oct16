@@ -7,6 +7,8 @@ service firebase.storage {
                     && request.auth.token.email == 'egorgubarenko8@gmail.com'
                     && request.resource.size < 5 * 1024 * 1024
                     && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null
+                    && request.auth.token.email == 'egorgubarenko8@gmail.com';
     }
   }
 }

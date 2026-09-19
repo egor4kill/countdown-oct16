@@ -23,12 +23,14 @@
   var newsList = document.getElementById('news-admin-list');
   var newsImgBtn = document.getElementById('news-img-btn');
   var newsImg = document.getElementById('news-img');
-  var newsPreviewBtn = document.getElementById('news-preview-btn');
+  var newsStatus = document.getElementById('news-status');
+  var newsPreviewLabel = document.getElementById('news-preview-label');
   var newsPreviewBox = document.getElementById('news-preview-box');
 
   var storage = window.__fbStorage || null;
 
   var editingId = null;
+  var editingOldNames = [];
   var DRAFT_KEY = 'news_draft_v1';
   var draftTimer = null;
 
@@ -70,7 +72,9 @@
         newsTitle.value = d.title || '';
         newsText.value = d.text || '';
         editingId = null;
+        editingOldNames = [];
         setPublishMode();
+        renderLivePreview();
         newsDraft.hidden = true;
       });
       var discard = document.createElement('button');
@@ -92,10 +96,25 @@
   }
 
   function showStatus(text) {
-    var box = newsPreviewBox;
-    box.innerHTML = '';
-    box.textContent = text || '';
-    box.hidden = !text;
+    newsStatus.textContent = text || '';
+  }
+
+  function renderLivePreview() {
+    var v = newsText.value.trim();
+    if (!v) {
+      newsPreviewLabel.hidden = true;
+      newsPreviewBox.hidden = true;
+      newsPreviewBox.innerHTML = '';
+      return;
+    }
+    newsPreviewLabel.hidden = false;
+    if (window.marked && window.DOMPurify) {
+      newsPreviewBox.innerHTML = window.DOMPurify.sanitize(window.marked.parse(v));
+    } else {
+      newsPreviewBox.textContent = v;
+      newsPreviewBox.style.whiteSpace = 'pre-wrap';
+    }
+    newsPreviewBox.hidden = false;
   }
 
   function setPublishMode() {
@@ -107,10 +126,14 @@
     newsTitle.value = '';
     newsText.value = '';
     editingId = null;
+    editingOldNames = [];
     setPublishMode();
     clearDraft();
     newsDraft.hidden = true;
+    newsPreviewLabel.hidden = true;
     newsPreviewBox.hidden = true;
+    newsPreviewBox.innerHTML = '';
+    showStatus('');
   }
 
   if (adminEmailEl) adminEmailEl.textContent = ADMIN_EMAIL;
@@ -238,13 +261,14 @@
       editBtn.textContent = 'Изменить';
       editBtn.addEventListener('click', function () {
         editingId = n.id;
+        editingOldNames = extractImageNames(n.text || '');
         newsTitle.value = n.title || '';
         newsText.value = n.text || '';
         setPublishMode();
-        newsPreviewBox.hidden = true;
-        newsTitle.focus();
+        renderLivePreview();
         clearDraft();
         newsDraft.hidden = true;
+        newsTitle.focus();
       });
 
       var delBtn = document.createElement('button');
@@ -252,7 +276,9 @@
       delBtn.textContent = 'Удалить';
       delBtn.addEventListener('click', function () {
         if (!confirm('Удалить новость?')) return;
+        var names = extractImageNames(n.text || '');
         db.collection('news').doc(n.id).delete()
+          .then(function () { return deleteImages(names); })
           .catch(function (err) { alert('Не удалось: ' + err.message); });
       });
 
@@ -309,7 +335,14 @@
 
     var request;
     if (editingId) {
-      request = db.collection('news').doc(editingId).update({ title: title, text: text });
+      var oldNames = editingOldNames;
+      request = db.collection('news').doc(editingId).update({ title: title, text: text })
+        .then(function () {
+          var removed = oldNames.filter(function (name) {
+            return extractImageNames(text).indexOf(name) === -1;
+          });
+          return deleteImages(removed);
+        });
     } else {
       request = db.collection('news').add({
         title: title,
@@ -329,6 +362,7 @@
   });
 
   newsEditCancel.addEventListener('click', function () {
+    if (!editingId) { resetEditor(); return; }
     var d = getDraft();
     if (d && (d.title || d.text) && newsText.value === d.text && newsTitle.value === d.title) {
       resetEditor();
@@ -336,15 +370,21 @@
       newsTitle.value = '';
       newsText.value = '';
       editingId = null;
+      editingOldNames = [];
       setPublishMode();
-      clearDraft();
-      newsDraft.hidden = true;
+      newsPreviewLabel.hidden = true;
       newsPreviewBox.hidden = true;
+      newsPreviewBox.innerHTML = '';
+      showStatus('');
+      renderDraftBanner();
     }
   });
 
   newsTitle.addEventListener('input', scheduleDraft);
-  newsText.addEventListener('input', scheduleDraft);
+  newsText.addEventListener('input', function () {
+    scheduleDraft();
+    renderLivePreview();
+  });
 
   newsText.addEventListener('keydown', function (e) {
     var k = e.key.toLowerCase();
@@ -376,6 +416,7 @@
     showStatus('Загрузка изображения…');
     uploadImage(file, function (url) {
       insertImageMarkdown(url, 'картинка');
+      renderLivePreview();
       showStatus('');
     }, function (err) {
       alert('Не удалось вставить картинку: ' + err.message);
@@ -404,7 +445,7 @@
         if (idx === 0) newsText.focus();
         insertImageMarkdown(url, (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' '));
         pending--;
-        if (pending === 0) showStatus('');
+        if (pending === 0) { renderLivePreview(); showStatus(''); }
       }, function (err) {
         pending--;
         if (pending === 0) {
@@ -486,6 +527,7 @@
     uploadImage(file, function (url) {
       var alt = (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' ');
       insertImageMarkdown(url, alt);
+      renderLivePreview();
       newsImgBtn.disabled = false;
       newsImgBtn.textContent = 'Картинка';
       newsImg.value = '';
@@ -497,16 +539,24 @@
     });
   });
 
-  newsPreviewBtn.addEventListener('click', function () {
-    var v = newsText.value.trim();
-    if (!v) { newsPreviewBox.innerHTML = '<em>Пусто.</em>'; }
-    else if (window.marked && window.DOMPurify) {
-      newsPreviewBox.innerHTML = window.DOMPurify.sanitize(window.marked.parse(v));
-    } else {
-      newsPreviewBox.textContent = v;
+  function extractImageNames(md) {
+    var names = [];
+    var re = /news_images(?:\/|%2F)([A-Za-z0-9._\-%]+)/g;
+    var m;
+    while ((m = re.exec(md || ''))) {
+      names.push(decodeURIComponent(m[1]));
     }
-    newsPreviewBox.hidden = !newsPreviewBox.hidden;
-  });
+    return names;
+  }
+
+  function deleteImages(names) {
+    if (!storage || !names.length) return Promise.resolve();
+    return Promise.all(names.map(function (name) {
+      return storage.ref('news_images/' + name).delete().catch(function (e) {
+        return null;
+      });
+    })).then(function () { return null; });
+  }
 
   function updateUser(user) {
     if (user && user.email === ADMIN_EMAIL) {
