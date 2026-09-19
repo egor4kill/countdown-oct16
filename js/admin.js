@@ -414,14 +414,17 @@
     if (!file) return;
     e.preventDefault();
     showStatus('Загрузка изображения…');
-    uploadImage(file, function (url) {
-      insertImageMarkdown(url, 'картинка');
-      renderLivePreview();
-      showStatus('');
-    }, function (err) {
-      alert('Не удалось вставить картинку: ' + err.message);
-      showStatus('');
-    });
+    try {
+      uploadImage(file, function (url) {
+        insertImageMarkdown(url, 'картинка');
+        renderLivePreview();
+        showStatus('');
+      }, function (err) {
+        showError(err);
+      });
+    } catch (err) {
+      showError(err);
+    }
   });
 
   newsText.addEventListener('dragover', function (e) {
@@ -440,19 +443,26 @@
     e.preventDefault();
     showStatus('Загрузка изображений…');
     var pending = images.length;
+    var firstError = null;
     images.forEach(function (file, idx) {
-      uploadImage(file, function (url) {
-        if (idx === 0) newsText.focus();
-        insertImageMarkdown(url, (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' '));
+      try {
+        uploadImage(file, function (url) {
+          if (idx === 0) newsText.focus();
+          insertImageMarkdown(url, (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' '));
+          pending--;
+          if (pending === 0) { renderLivePreview(); showStatus(firstError ? 'Ошибка: ' + firstError : ''); }
+        }, function (err) {
+          pending--;
+          firstError = firstError || (err && err.message ? err.message : String(err));
+          if (pending === 0) { renderLivePreview(); showStatus('Ошибка: ' + firstError); }
+          console.error(err);
+        });
+      } catch (err) {
         pending--;
-        if (pending === 0) { renderLivePreview(); showStatus(''); }
-      }, function (err) {
-        pending--;
-        if (pending === 0) {
-          alert('Не удалось вставить картинку: ' + err.message);
-          showStatus('');
-        }
-      });
+        firstError = firstError || String(err);
+        if (pending === 0) { renderLivePreview(); showStatus('Ошибка: ' + firstError); }
+        console.error(err);
+      }
     });
   });
 
@@ -506,11 +516,28 @@
       return fail(new Error('Картинка больше 5 МБ.'));
     }
     var ref = storage.ref('news_images/' + Date.now() + '-' + file.name.replace(/[^\w.\-]+/g, '_'));
-    ref.put(file).then(function () {
-      return ref.getDownloadURL();
-    }).then(function (url) {
-      done(url);
-    }).catch(function (err) {
+    var task = ref.put(file);
+    var settled = false;
+    var timer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      task.cancel();
+      fail(new Error('Таймаут загрузки (90 с). Проверьте интернет и правила Storage ' +
+        '(firebase deploy --only storage).'));
+    }, 90000);
+    task.then(function () {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      ref.getDownloadURL().then(function (url) {
+        done(url);
+      }, function (err) {
+        fail(err);
+      });
+    }, function (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       fail(err);
     });
   }
@@ -524,20 +551,34 @@
     if (!file) return;
     newsImgBtn.disabled = true;
     newsImgBtn.textContent = 'Загрузка…';
-    uploadImage(file, function (url) {
-      var alt = (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' ');
-      insertImageMarkdown(url, alt);
-      renderLivePreview();
+    try {
+      uploadImage(file, function (url) {
+        var alt = (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' ');
+        insertImageMarkdown(url, alt);
+        renderLivePreview();
+        newsImgBtn.disabled = false;
+        newsImgBtn.textContent = 'Картинка';
+        newsImg.value = '';
+        showStatus('');
+      }, function (err) {
+        newsImgBtn.disabled = false;
+        newsImgBtn.textContent = 'Картинка';
+        newsImg.value = '';
+        showError(err);
+      });
+    } catch (err) {
       newsImgBtn.disabled = false;
       newsImgBtn.textContent = 'Картинка';
       newsImg.value = '';
-    }, function (err) {
-      alert('Не удалось загрузить: ' + err.message);
-      newsImgBtn.disabled = false;
-      newsImgBtn.textContent = 'Картинка';
-      newsImg.value = '';
-    });
+      showError(err);
+    }
   });
+
+  function showError(err) {
+    var msg = (err && err.message) ? err.message : String(err);
+    showStatus('Ошибка: ' + msg);
+    console.error(err);
+  }
 
   function extractImageNames(md) {
     var names = [];
