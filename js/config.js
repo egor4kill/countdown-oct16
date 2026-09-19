@@ -34,4 +34,7 @@
   if (typeof firebase.auth === 'function') {
     window.__fbAuth = firebase.auth(app);
   }
+  if (typeof firebase.storage === 'function') {
+    window.__fbStorage = firebase.storage(app);
+  }
 })();

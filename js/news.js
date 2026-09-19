@@ -14,6 +14,18 @@
     });
   }
 
+  function renderMarkdown(md) {
+    var div = document.createElement('div');
+    div.className = 'news-body';
+    if (window.marked && window.DOMPurify) {
+      div.innerHTML = window.DOMPurify.sanitize(window.marked.parse(md));
+    } else {
+      div.textContent = md;
+      if (md.indexOf('\n') !== -1) div.style.whiteSpace = 'pre-wrap';
+    }
+    return div;
+  }
+
   db.collection('news')
     .orderBy('createdAt', 'desc')
     .onSnapshot(function (snap) {
@@ -42,9 +54,7 @@
         card.appendChild(title);
 
         if (data.text) {
-          var p = document.createElement('p');
-          p.textContent = data.text;
-          card.appendChild(p);
+          card.appendChild(renderMarkdown(data.text));
         }
 
         list.appendChild(card);

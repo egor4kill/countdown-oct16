@@ -19,6 +19,12 @@
   var newsText = document.getElementById('news-text');
   var newsPublish = document.getElementById('news-publish');
   var newsList = document.getElementById('news-admin-list');
+  var newsImgBtn = document.getElementById('news-img-btn');
+  var newsImg = document.getElementById('news-img');
+  var newsPreviewBtn = document.getElementById('news-preview-btn');
+  var newsPreviewBox = document.getElementById('news-preview-box');
+
+  var storage = window.__fbStorage || null;
 
   if (adminEmailEl) adminEmailEl.textContent = ADMIN_EMAIL;
 
@@ -174,6 +180,99 @@
       alert('Не удалось опубликовать: ' + err.message);
       newsPublish.disabled = false;
     });
+  });
+
+  function wrapSelection(before, after) {
+    var ta = newsText;
+    var s = ta.selectionStart;
+    var e = ta.selectionEnd;
+    var v = ta.value;
+    var sel = v.slice(s, e) || 'текст';
+    ta.value = v.slice(0, s) + before + sel + after + v.slice(e);
+    ta.focus();
+    ta.selectionStart = s + before.length;
+    ta.selectionEnd = e + before.length;
+  }
+
+  function prefixAtCursor(p) {
+    var ta = newsText;
+    var s = ta.selectionStart;
+    var v = ta.value;
+    ta.value = v.slice(0, s) + p + v.slice(s);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = s + p.length;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.news-toolbar .tool'), function (btn) {
+    btn.addEventListener('click', function () {
+      var wrap = btn.getAttribute('data-wrap');
+      var prefix = btn.getAttribute('data-prefix');
+      if (wrap) {
+        wrapSelection(wrap, btn.getAttribute('data-close') || wrap);
+      } else if (prefix) {
+        prefixAtCursor(prefix);
+      } else if (btn.getAttribute('data-link')) {
+        var url = prompt('Ссылка (https://...)');
+        if (!url) return;
+        wrapSelection('[' + url + '](', ')');
+      }
+    });
+  });
+
+  function insertImageMarkdown(url, alt) {
+    prefixAtCursor('![' + alt + '](' + url + ')');
+  }
+
+  function uploadImage(file, done, fail) {
+    if (!storage) return fail(new Error('Хранилище не подключено.'));
+    if (!file.type || file.type.indexOf('image/') !== 0) {
+      return fail(new Error('Нужен файл изображения.'));
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return fail(new Error('Картинка больше 5 МБ.'));
+    }
+    var ref = storage.ref('news_images/' + Date.now() + '-' + file.name.replace(/[^\w.\-]+/g, '_'));
+    ref.put(file).then(function () {
+      return ref.getDownloadURL();
+    }).then(function (url) {
+      done(url);
+    }).catch(function (err) {
+      fail(err);
+    });
+  }
+
+  newsImgBtn.addEventListener('click', function () {
+    newsImg.click();
+  });
+
+  newsImg.addEventListener('change', function () {
+    var file = newsImg.files && newsImg.files[0];
+    if (!file) return;
+    newsImgBtn.disabled = true;
+    newsImgBtn.textContent = 'Загрузка…';
+    uploadImage(file, function (url) {
+      var alt = (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' ');
+      insertImageMarkdown(url, alt);
+      newsImgBtn.disabled = false;
+      newsImgBtn.textContent = 'Картинка';
+      newsImg.value = '';
+    }, function (err) {
+      alert('Не удалось загрузить: ' + err.message);
+      newsImgBtn.disabled = false;
+      newsImgBtn.textContent = 'Картинка';
+      newsImg.value = '';
+    });
+  });
+
+  newsPreviewBtn.addEventListener('click', function () {
+    var v = newsText.value.trim();
+    if (!v) { newsPreviewBox.innerHTML = '<em>Пусто.</em>'; }
+    else if (window.marked && window.DOMPurify) {
+      newsPreviewBox.innerHTML = window.DOMPurify.sanitize(window.marked.parse(v));
+    } else {
+      newsPreviewBox.textContent = v;
+    }
+    newsPreviewBox.hidden = !newsPreviewBox.hidden;
   });
 
   function updateUser(user) {

@@ -23,9 +23,22 @@
     <div id="news-admin" hidden>
       <h2 style="margin: 30px 0 12px;">Новости</h2>
       <div class="news-form">
+        <div class="news-toolbar">
+          <button type="button" class="tool" data-wrap="**" data-close="**">Жирный</button>
+          <button type="button" class="tool" data-wrap="*" data-close="*">Курсив</button>
+          <button type="button" class="tool" data-prefix="## ">Заголовок</button>
+          <button type="button" class="tool" data-prefix="- ">Список</button>
+          <button type="button" class="tool" data-link="1">Ссылка</button>
+          <button type="button" class="tool" id="news-img-btn">Картинка</button>
+          <input type="file" id="news-img" accept="image/*" hidden>
+        </div>
         <input type="text" id="news-title" maxlength="200" placeholder="Заголовок">
-        <textarea id="news-text" maxlength="5000" rows="4" placeholder="Текст новости"></textarea>
-        <button class="btn" id="news-publish">Опубликовать</button>
+        <textarea id="news-text" maxlength="5000" rows="4" placeholder="Текст новости (поддерживается форматирование)"></textarea>
+        <div class="news-actions">
+          <button class="btn" id="news-publish">Опубликовать</button>
+          <button class="btn ghost" id="news-preview-btn" type="button">Предпросмотр</button>
+        </div>
+        <div class="news-preview" id="news-preview-box" hidden></div>
       </div>
       <div id="news-admin-list" style="margin-top: 18px;"></div>
     </div>
@@ -34,6 +47,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/admin.js"></script>
 </body>
