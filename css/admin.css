@@ -119,6 +119,45 @@ h1 {
   cursor: not-allowed;
 }
 
+.news-cover-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cover-hint {
+  font-size: 12px;
+  color: #8ea0c8;
+}
+
+.news-cover-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.news-cover-box img {
+  width: 120px;
+  height: 75px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.news-cover-thumb {
+  width: 44px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-left: auto;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .news-actions {
   display: flex;
   flex-wrap: wrap;

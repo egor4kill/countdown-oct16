@@ -23,9 +23,16 @@
   var newsList = document.getElementById('news-admin-list');
   var newsImgBtn = document.getElementById('news-img-btn');
   var newsImg = document.getElementById('news-img');
+  var newsCoverBtn = document.getElementById('news-cover-btn');
+  var newsCover = document.getElementById('news-cover');
+  var newsCoverBox = document.getElementById('news-cover-box');
+  var newsCoverImg = document.getElementById('news-cover-img');
+  var newsCoverRemove = document.getElementById('news-cover-remove');
   var newsStatus = document.getElementById('news-status');
   var newsPreviewLabel = document.getElementById('news-preview-label');
   var newsPreviewBox = document.getElementById('news-preview-box');
+
+  var coverUrl = '';
 
   var editingId = null;
   var DRAFT_KEY = 'news_draft_v1';
@@ -128,6 +135,7 @@
     newsPreviewLabel.hidden = true;
     newsPreviewBox.hidden = true;
     newsPreviewBox.innerHTML = '';
+    setCover('');
     showStatus('');
   }
 
@@ -230,6 +238,14 @@
       head.appendChild(pin);
       head.appendChild(strong);
 
+      if (n.cover) {
+        var thumb = document.createElement('img');
+        thumb.className = 'news-cover-thumb';
+        thumb.src = n.cover;
+        thumb.alt = '';
+        head.appendChild(thumb);
+      }
+
       var body = document.createElement('div');
       body.className = 'text';
       body.textContent = n.text || '';
@@ -258,6 +274,7 @@
         editingId = n.id;
         newsTitle.value = n.title || '';
         newsText.value = n.text || '';
+        setCover(n.cover || '');
         setPublishMode();
         renderLivePreview();
         clearDraft();
@@ -302,7 +319,8 @@
             title: doc.data().title,
             text: doc.data().text,
             createdAt: doc.data().createdAt,
-            pinned: doc.data().pinned === true
+            pinned: doc.data().pinned === true,
+            cover: doc.data().cover || ''
           });
         });
         renderNews(items);
@@ -327,11 +345,12 @@
 
     var request;
     if (editingId) {
-      request = db.collection('news').doc(editingId).update({ title: title, text: text });
+      request = db.collection('news').doc(editingId).update({ title: title, text: text, cover: coverUrl });
     } else {
       request = db.collection('news').add({
         title: title,
         text: text,
+        cover: coverUrl,
         pinned: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -356,6 +375,7 @@
       newsText.value = '';
       editingId = null;
       setPublishMode();
+      setCover('');
       newsPreviewLabel.hidden = true;
       newsPreviewBox.hidden = true;
       newsPreviewBox.innerHTML = '';
@@ -556,6 +576,57 @@
       newsImg.value = '';
       showError(err);
     }
+  });
+
+  function syncCoverPreview() {
+    if (coverUrl) {
+      newsCoverImg.src = coverUrl;
+      newsCoverBox.hidden = false;
+    } else {
+      newsCoverImg.removeAttribute('src');
+      newsCoverBox.hidden = true;
+    }
+  }
+
+  function setCover(url) {
+    coverUrl = url || '';
+    syncCoverPreview();
+  }
+
+  newsCoverBtn.addEventListener('click', function () {
+    newsCover.click();
+  });
+
+  newsCover.addEventListener('change', function () {
+    var file = newsCover.files && newsCover.files[0];
+    if (!file) return;
+    newsCoverBtn.disabled = true;
+    newsCoverBtn.textContent = 'Загрузка…';
+    showStatus('Загрузка обложки…');
+    try {
+      uploadImage(file, function (url) {
+        setCover(url);
+        newsCoverBtn.disabled = false;
+        newsCoverBtn.textContent = 'Обложка';
+        newsCover.value = '';
+        showStatus('');
+      }, function (err) {
+        newsCoverBtn.disabled = false;
+        newsCoverBtn.textContent = 'Обложка';
+        newsCover.value = '';
+        showError(err);
+      });
+    } catch (err) {
+      newsCoverBtn.disabled = false;
+      newsCoverBtn.textContent = 'Обложка';
+      newsCover.value = '';
+      showError(err);
+    }
+  });
+
+  newsCoverRemove.addEventListener('click', function () {
+    setCover('');
+    showStatus('');
   });
 
   function showError(err) {

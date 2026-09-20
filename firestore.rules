@@ -40,7 +40,10 @@ service cloud.firestore {
                     && request.resource.data.title.size() <= 200
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
-                    && request.resource.data.text.size() <= 5000;
+                    && request.resource.data.text.size() <= 5000
+                    && (!('cover' in request.resource.data)
+                        || request.resource.data.cover is string
+                        && request.resource.data.cover.size() <= 2048);
       allow update: if request.auth != null
                     && request.auth.token.email == 'egorgubarenko8@gmail.com'
                     && (!('title' in request.resource.data)
@@ -52,7 +55,10 @@ service cloud.firestore {
                             && request.resource.data.text.size() > 0
                             && request.resource.data.text.size() <= 5000))
                     && (!('pinned' in request.resource.data)
-                        || request.resource.data.pinned is bool);
+                        || request.resource.data.pinned is bool)
+                    && (!('cover' in request.resource.data)
+                        || request.resource.data.cover is string
+                        && request.resource.data.cover.size() <= 2048);
       allow delete: if request.auth != null
                     && request.auth.token.email == 'egorgubarenko8@gmail.com';
     }

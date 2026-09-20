@@ -35,6 +35,15 @@
         </div>
         <input type="text" id="news-title" maxlength="200" placeholder="Заголовок">
         <textarea id="news-text" maxlength="5000" rows="4" placeholder="Текст новости — можно вставить картинку через Ctrl+V или перетащить файл"></textarea>
+        <div class="news-cover-row">
+          <button type="button" class="btn ghost" id="news-cover-btn">Обложка</button>
+          <input type="file" id="news-cover" accept="image/*" hidden>
+          <span class="cover-hint">Картинка-превью на карточке (необязательно)</span>
+        </div>
+        <div class="news-cover-box" id="news-cover-box" hidden>
+          <img id="news-cover-img" alt="Обложка">
+          <button type="button" class="btn small ghost" id="news-cover-remove">Убрать обложку</button>
+        </div>
         <div class="news-actions">
           <button class="btn" id="news-publish">Опубликовать</button>
           <button class="btn ghost" id="news-edit-cancel" type="button" hidden>Отменить правку</button>

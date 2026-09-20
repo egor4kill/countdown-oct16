@@ -14,9 +14,16 @@
     });
   }
 
-  function renderMarkdown(md) {
+  function fmtDateShort(t) {
+    if (!t || !t.toDate) return '—';
+    return t.toDate().toLocaleDateString('ru-RU', {
+      day: 'numeric', month: 'short'
+    });
+  }
+
+  function renderMarkdown(md, className) {
     var div = document.createElement('div');
-    div.className = 'news-body';
+    div.className = className || 'news-body';
     if (window.marked && window.DOMPurify) {
       div.innerHTML = window.DOMPurify.sanitize(window.marked.parse(md));
     } else {
@@ -24,6 +31,119 @@
       if (md.indexOf('\n') !== -1) div.style.whiteSpace = 'pre-wrap';
     }
     return div;
+  }
+
+  function makeStamp(label, cls) {
+    var s = document.createElement('span');
+    s.className = 'stamp ' + cls;
+    s.textContent = label;
+    return s;
+  }
+
+  function openModal(news) {
+    var overlay = document.createElement('div');
+    overlay.className = 'news-modal-overlay';
+
+    var modal = document.createElement('div');
+    modal.className = 'news-modal';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'news-modal-close';
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Закрыть');
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', close);
+
+    var title = document.createElement('h2');
+    title.textContent = news.title;
+
+    var date = document.createElement('div');
+    date.className = 'news-modal-date';
+    date.textContent = fmtDate(news.createdAt);
+
+    modal.appendChild(closeBtn);
+    modal.appendChild(title);
+    modal.appendChild(date);
+    modal.appendChild(renderMarkdown(news.text || '', 'news-body'));
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    function close() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKey, true);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') close();
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) close();
+    });
+    document.addEventListener('keydown', onKey, true);
+  }
+
+  function buildCard(news) {
+    var card = document.createElement('article');
+    card.className = 'news-card' + (news.pinned ? ' pinned' : '') + (news.cover ? ' has-cover' : '');
+
+    var stamps = null;
+
+    if (news.cover) {
+      var coverWrap = document.createElement('div');
+      coverWrap.className = 'news-cover';
+      var img = document.createElement('img');
+      img.src = news.cover;
+      img.alt = '';
+      img.loading = 'lazy';
+      coverWrap.appendChild(img);
+      if (news.pinned || news.cover) {
+        stamps = document.createElement('div');
+        stamps.className = 'news-stamps';
+        if (news.pinned) stamps.appendChild(makeStamp('Срочно', 'stamp-srochno'));
+        if (news.cover) stamps.appendChild(makeStamp('Фото', 'stamp-photo'));
+        coverWrap.appendChild(stamps);
+      }
+      card.appendChild(coverWrap);
+    }
+
+    var cont = document.createElement('div');
+    cont.className = 'news-cont';
+
+    if (!stamps && (news.pinned || news.cover)) {
+      stamps = document.createElement('div');
+      stamps.className = 'news-stamps';
+      if (news.pinned) stamps.appendChild(makeStamp('Срочно', 'stamp-srochno'));
+      if (news.cover) stamps.appendChild(makeStamp('Фото', 'stamp-photo'));
+      cont.appendChild(stamps);
+    }
+
+    var title = document.createElement('h2');
+    title.textContent = news.title;
+    cont.appendChild(title);
+
+    if (news.text) {
+      var teaser = document.createElement('div');
+      teaser.className = 'news-teaser';
+      teaser.appendChild(renderMarkdown(news.text, 'news-body'));
+      cont.appendChild(teaser);
+    }
+
+    var date = document.createElement('div');
+    date.className = 'news-meta';
+    date.textContent = fmtDateShort(news.createdAt) + (news.pinned ? ' · закреплено' : '');
+    cont.appendChild(date);
+
+    card.appendChild(cont);
+
+    card.addEventListener('click', function () {
+      openModal(news);
+    });
+
+    return card;
   }
 
   db.collection('news')
@@ -38,7 +158,8 @@
           title: data.title,
           text: data.text,
           createdAt: data.createdAt,
-          pinned: data.pinned === true
+          pinned: data.pinned === true,
+          cover: data.cover || ''
         });
       });
 
@@ -57,30 +178,7 @@
       }
 
       items.forEach(function (news) {
-        var card = document.createElement('article');
-        card.className = 'news-card' + (news.pinned ? ' pinned' : '');
-
-        var date = document.createElement('div');
-        date.className = 'news-date';
-        date.textContent = fmtDate(news.createdAt);
-        if (news.pinned) {
-          var pinBadge = document.createElement('span');
-          pinBadge.className = 'pin-badge';
-          pinBadge.textContent = 'закреплено';
-          date.appendChild(pinBadge);
-        }
-
-        var title = document.createElement('h2');
-        title.textContent = news.title;
-
-        card.appendChild(date);
-        card.appendChild(title);
-
-        if (news.text) {
-          card.appendChild(renderMarkdown(news.text));
-        }
-
-        list.appendChild(card);
+        list.appendChild(buildCard(news));
       });
     }, function (err) {
       list.innerHTML = '<div class="empty">Ошибка загрузки: ' + err.message + '</div>';
