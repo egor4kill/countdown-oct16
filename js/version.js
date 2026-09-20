@@ -1,1 +1,1 @@
-window.SITE_VERSION = "2026.09.19.11";
+window.SITE_VERSION = "2026.09.19.12";

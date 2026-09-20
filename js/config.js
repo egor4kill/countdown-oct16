@@ -11,11 +11,14 @@
       apiKey: "AIzaSyApLs9TpX6m1zuHgwouM8Ot0qgN2gD3v0A",
       authDomain: "sanya-1bd30.firebaseapp.com",
       projectId: "sanya-1bd30",
-      storageBucket: "sanya-1bd30.appspot.com",
       messagingSenderId: "437851305114",
       appId: "1:437851305114:web:110928e67e982c6b86db23",
       measurementId: "G-FVRRQTDD7K"
     },
+
+    // Загрузка картинок для новостей — бесплатный хостинг ImgBB.
+    // Вставьте свой ключ: https://imgbb.com/login (аккаунт) → API key.
+    IMGBB_KEY: "YOUR_IMGBB_KEY_HERE",
 
     // Опрос на главной. Один голос на посетителя (по анонимному UID).
     POLL: {
@@ -33,8 +36,5 @@
   window.__fbDB = firebase.firestore(app);
   if (typeof firebase.auth === 'function') {
     window.__fbAuth = firebase.auth(app);
-  }
-  if (typeof firebase.storage === 'function') {
-    window.__fbStorage = firebase.storage(app);
   }
 })();

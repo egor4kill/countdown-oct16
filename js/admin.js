@@ -27,10 +27,7 @@
   var newsPreviewLabel = document.getElementById('news-preview-label');
   var newsPreviewBox = document.getElementById('news-preview-box');
 
-  var storage = window.__fbStorage || null;
-
   var editingId = null;
-  var editingOldNames = [];
   var DRAFT_KEY = 'news_draft_v1';
   var draftTimer = null;
 
@@ -72,7 +69,6 @@
         newsTitle.value = d.title || '';
         newsText.value = d.text || '';
         editingId = null;
-        editingOldNames = [];
         setPublishMode();
         renderLivePreview();
         newsDraft.hidden = true;
@@ -126,7 +122,6 @@
     newsTitle.value = '';
     newsText.value = '';
     editingId = null;
-    editingOldNames = [];
     setPublishMode();
     clearDraft();
     newsDraft.hidden = true;
@@ -261,7 +256,6 @@
       editBtn.textContent = 'Изменить';
       editBtn.addEventListener('click', function () {
         editingId = n.id;
-        editingOldNames = extractImageNames(n.text || '');
         newsTitle.value = n.title || '';
         newsText.value = n.text || '';
         setPublishMode();
@@ -276,9 +270,7 @@
       delBtn.textContent = 'Удалить';
       delBtn.addEventListener('click', function () {
         if (!confirm('Удалить новость?')) return;
-        var names = extractImageNames(n.text || '');
         db.collection('news').doc(n.id).delete()
-          .then(function () { return deleteImages(names); })
           .catch(function (err) { alert('Не удалось: ' + err.message); });
       });
 
@@ -335,14 +327,7 @@
 
     var request;
     if (editingId) {
-      var oldNames = editingOldNames;
-      request = db.collection('news').doc(editingId).update({ title: title, text: text })
-        .then(function () {
-          var removed = oldNames.filter(function (name) {
-            return extractImageNames(text).indexOf(name) === -1;
-          });
-          return deleteImages(removed);
-        });
+      request = db.collection('news').doc(editingId).update({ title: title, text: text });
     } else {
       request = db.collection('news').add({
         title: title,
@@ -370,7 +355,6 @@
       newsTitle.value = '';
       newsText.value = '';
       editingId = null;
-      editingOldNames = [];
       setPublishMode();
       newsPreviewLabel.hidden = true;
       newsPreviewBox.hidden = true;
@@ -402,7 +386,6 @@
   });
 
   newsText.addEventListener('paste', function (e) {
-    if (!storage) return;
     var items = (e.clipboardData && e.clipboardData.items) ? e.clipboardData.items : [];
     var file = null;
     for (var i = 0; i < items.length; i++) {
@@ -432,7 +415,6 @@
   });
 
   newsText.addEventListener('drop', function (e) {
-    if (!storage) return;
     var files = e.dataTransfer ? e.dataTransfer.files : [];
     if (!files.length) return;
     var images = [];
@@ -508,39 +490,39 @@
   }
 
   function uploadImage(file, done, fail) {
-    if (!storage) return fail(new Error('Хранилище не подключено.'));
     if (!file.type || file.type.indexOf('image/') !== 0) {
       return fail(new Error('Нужен файл изображения.'));
     }
     if (file.size > 5 * 1024 * 1024) {
       return fail(new Error('Картинка больше 5 МБ.'));
     }
-    var ref = storage.ref('news_images/' + Date.now() + '-' + file.name.replace(/[^\w.\-]+/g, '_'));
-    var task = ref.put(file);
-    var settled = false;
-    var timer = setTimeout(function () {
-      if (settled) return;
-      settled = true;
-      task.cancel();
-      console.error('Upload timeout. Bucket:', AppConfig.FIREBASE.storageBucket, 'File:', file.name, 'Size:', file.size);
-      fail(new Error('Таймаут загрузки (90 с): бакет Storage не найден. ' +
-        'Включите Storage в консоли Firebase (Build → Storage → Get started). ' +
-        'После этого обновите страницу (Ctrl+F5).'));
-    }, 90000);
-    task.then(function () {
-      if (settled) return;
-      settled = true;
+    var key = AppConfig.IMGBB_KEY;
+    if (!key || key === 'YOUR_IMGBB_KEY_HERE') {
+      return fail(new Error('Не задан ключ ImgBB в js/config.js (поле IMGBB_KEY).'));
+    }
+    var fd = new FormData();
+    fd.append('image', file);
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 90000);
+    fetch('https://api.imgbb.com/1/upload?key=' + encodeURIComponent(key), {
+      method: 'POST',
+      body: fd,
+      signal: ctrl.signal
+    }).then(function (res) {
+      return res.json();
+    }).then(function (json) {
       clearTimeout(timer);
-      ref.getDownloadURL().then(function (url) {
-        done(url);
-      }, function (err) {
-        fail(err);
-      });
-    }, function (err) {
-      if (settled) return;
-      settled = true;
+      if (json && json.data && json.data.url) {
+        done(json.data.url);
+      } else {
+        var msg = json && json.error && json.error.message ? json.error.message : 'Неизвестная ошибка ImgBB.';
+        fail(new Error(msg));
+      }
+    }).catch(function (err) {
       clearTimeout(timer);
-      fail(err);
+      fail((err && err.name === 'AbortError')
+        ? new Error('Таймаут загрузки (90 с). Проверьте интернет.')
+        : err);
     });
   }
 
@@ -580,25 +562,6 @@
     var msg = (err && err.message) ? err.message : String(err);
     showStatus('Ошибка: ' + msg);
     console.error(err);
-  }
-
-  function extractImageNames(md) {
-    var names = [];
-    var re = /news_images(?:\/|%2F)([A-Za-z0-9._\-%]+)/g;
-    var m;
-    while ((m = re.exec(md || ''))) {
-      names.push(decodeURIComponent(m[1]));
-    }
-    return names;
-  }
-
-  function deleteImages(names) {
-    if (!storage || !names.length) return Promise.resolve();
-    return Promise.all(names.map(function (name) {
-      return storage.ref('news_images/' + name).delete().catch(function (e) {
-        return null;
-      });
-    })).then(function () { return null; });
   }
 
   function updateUser(user) {
