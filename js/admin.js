@@ -523,8 +523,9 @@
       settled = true;
       task.cancel();
       console.error('Upload timeout. Bucket:', AppConfig.FIREBASE.storageBucket, 'File:', file.name, 'Size:', file.size);
-      fail(new Error('Таймаут загрузки (90 с). Обновите страницу (Ctrl+F5) и проверьте, что Storage ' +
-        'включён в консоли проекта.'));
+      fail(new Error('Таймаут загрузки (90 с): бакет Storage не найден. ' +
+        'Включите Storage в консоли Firebase (Build → Storage → Get started). ' +
+        'После этого обновите страницу (Ctrl+F5).'));
     }, 90000);
     task.then(function () {
       if (settled) return;
