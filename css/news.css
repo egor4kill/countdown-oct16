@@ -280,43 +280,96 @@ h1 {
 }
 
 .fanfic-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 24px;
-  padding-top: 18px;
+  margin-top: 28px;
+  padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.fanfic-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .fanfic-nav button {
-  background: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
   color: #eef2ff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 9px 16px;
-  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 700;
   font-family: inherit;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .fanfic-nav button:hover:not(:disabled) {
-  border-color: #ff2d55;
-  background: rgba(255, 45, 85, 0.12);
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(255, 45, 85, 0.2), rgba(255, 45, 85, 0.06));
+  border-color: rgba(255, 45, 85, 0.75);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
 }
 
 .fanfic-nav button:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: default;
 }
 
 .fanfic-nav .page-count {
-  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 74px;
+  line-height: 1.05;
+  user-select: none;
+}
+
+.fanfic-nav .page-count .cur {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.fanfic-nav .page-count .cur em {
+  font-style: normal;
+  color: #ff2d55;
+}
+
+.fanfic-nav .page-count .tot {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   color: #8ea0c8;
-  white-space: nowrap;
+}
+
+.fanfic-dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 16px;
+}
+
+.fanfic-dots span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fanfic-dots span.on {
+  background: #ff2d55;
+  box-shadow: 0 0 8px rgba(255, 45, 85, 0.55);
 }
 
 .empty {

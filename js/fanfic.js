@@ -13,7 +13,9 @@
   var modalBody = null;
   var prevBtn = null;
   var nextBtn = null;
-  var countEl = null;
+  var curEl = null;
+  var totEl = null;
+  var dotsEl = null;
 
   function fmtDate(t) {
     if (!t || !t.toDate) return '—';
@@ -77,7 +79,15 @@
 
     prevBtn.disabled = current <= 0;
     nextBtn.disabled = current >= chapters.length - 1;
-    countEl.textContent = (current + 1) + ' из ' + chapters.length;
+
+    curEl.innerHTML = current + 1 < 10 ? '<em>0' + (current + 1) + '</em>' : '<em>' + (current + 1) + '</em>';
+    totEl.textContent = 'из ' + chapters.length;
+
+    if (dotsEl) {
+      for (var i = 0; i < dotsEl.children.length; i++) {
+        dotsEl.children[i].className = i <= current ? 'on' : '';
+      }
+    }
   }
 
   function openReader(startIdx) {
@@ -102,16 +112,25 @@
     var nav = document.createElement('div');
     nav.className = 'fanfic-nav';
 
+    var navRow = document.createElement('div');
+    navRow.className = 'fanfic-nav-row';
+
     prevBtn = document.createElement('button');
     prevBtn.type = 'button';
-    prevBtn.textContent = '← предыдущая';
+    prevBtn.textContent = '← Предыдущая';
 
-    countEl = document.createElement('span');
-    countEl.className = 'page-count';
+    var count = document.createElement('span');
+    count.className = 'page-count';
+    curEl = document.createElement('span');
+    curEl.className = 'cur';
+    totEl = document.createElement('span');
+    totEl.className = 'tot';
+    count.appendChild(curEl);
+    count.appendChild(totEl);
 
     nextBtn = document.createElement('button');
     nextBtn.type = 'button';
-    nextBtn.textContent = 'следующая →';
+    nextBtn.textContent = 'Следующая →';
 
     prevBtn.addEventListener('click', function () {
       renderChapter(current - 1);
@@ -120,9 +139,23 @@
       renderChapter(current + 1);
     });
 
-    nav.appendChild(prevBtn);
-    nav.appendChild(countEl);
-    nav.appendChild(nextBtn);
+    navRow.appendChild(prevBtn);
+    navRow.appendChild(count);
+    navRow.appendChild(nextBtn);
+    nav.appendChild(navRow);
+
+    if (chapters.length > 1) {
+      dotsEl = document.createElement('div');
+      dotsEl.className = 'fanfic-dots';
+      for (var i = 0; i < chapters.length; i++) {
+        var dot = document.createElement('span');
+        dot.setAttribute('title', 'Глава ' + chapters[i].number);
+        dotsEl.appendChild(dot);
+      }
+      nav.appendChild(dotsEl);
+    } else {
+      dotsEl = null;
+    }
 
     modal.appendChild(closeBtn);
     modal.appendChild(modalBody);
