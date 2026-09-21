@@ -83,19 +83,8 @@ body {
 
 .news-wrap {
   position: relative;
-  overflow: hidden;
   width: min(1000px, 94vw);
   text-align: left;
-}
-
-.news-wrap::before {
-  content: "";
-  position: absolute;
-  inset: -80px;
-  pointer-events: none;
-  z-index: 0;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='300'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' font-family='Arial,sans-serif' font-weight='800'%3E%3Ctext x='20' y='70' font-size='36' transform='rotate(-26 240 150)'%3EНЕ%20ПАНАРАМА%3C/text%3E%3Ctext x='20' y='170' font-size='36' transform='rotate(-26 240 150)'%3EНЕ%20ПАНАРАМА%3C/text%3E%3Ctext x='20' y='270' font-size='36' transform='rotate(-26 240 150)'%3EНЕ%20ПАНАРАМА%3C/text%3E%3C/g%3E%3C/svg%3E");
-  background-size: 480px 300px;
 }
 
 #news-list {
