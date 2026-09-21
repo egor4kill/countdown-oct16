@@ -62,5 +62,35 @@ service cloud.firestore {
       allow delete: if request.auth != null
                     && request.auth.token.email == 'egorgubarenko8@gmail.com';
     }
+
+    // Фанфик: главы читают все, пишут/удаляют только администратор.
+    match /fanfic/{document} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.auth.token.email == 'egorgubarenko8@gmail.com'
+                    && request.resource.data.number is int
+                    && request.resource.data.number > 0
+                    && request.resource.data.title is string
+                    && request.resource.data.title.size() > 0
+                    && request.resource.data.title.size() <= 200
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 50000;
+      allow update: if request.auth != null
+                    && request.auth.token.email == 'egorgubarenko8@gmail.com'
+                    && (!('number' in request.resource.data)
+                        || (request.resource.data.number is int
+                            && request.resource.data.number > 0))
+                    && (!('title' in request.resource.data)
+                        || (request.resource.data.title is string
+                            && request.resource.data.title.size() > 0
+                            && request.resource.data.title.size() <= 200))
+                    && (!('text' in request.resource.data)
+                        || (request.resource.data.text is string
+                            && request.resource.data.text.size() > 0
+                            && request.resource.data.text.size() <= 50000));
+      allow delete: if request.auth != null
+                    && request.auth.token.email == 'egorgubarenko8@gmail.com';
+    }
   }
 }

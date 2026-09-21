@@ -48,15 +48,15 @@ h1 {
   margin-bottom: 28px;
 }
 
-#news-list {
+.masonry {
   position: relative;
   z-index: 1;
   columns: 1;
   column-gap: 18px;
 }
 
-@media (min-width: 620px) { #news-list { columns: 2; } }
-@media (min-width: 940px) { #news-list { columns: 3; } }
+@media (min-width: 620px) { .masonry { columns: 2; } }
+@media (min-width: 940px) { .masonry { columns: 3; } }
 
 .news-card {
   position: relative;
@@ -118,6 +118,7 @@ h1 {
 
 .stamp-srochno { background: #e0263e; color: #fff; }
 .stamp-photo { background: #10141f; color: #ffd166; border: 1px solid rgba(255, 209, 102, 0.55); }
+.stamp-chapter { background: #ffd166; color: #10141f; }
 
 .news-cont { padding: 16px 18px 14px; }
 

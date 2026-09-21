@@ -489,7 +489,7 @@
     ta.selectionStart = ta.selectionEnd = s + p.length;
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('.news-toolbar .tool'), function (btn) {
+  Array.prototype.forEach.call(newsAdmin.querySelectorAll('.news-toolbar .tool'), function (btn) {
     btn.addEventListener('click', function () {
       var wrap = btn.getAttribute('data-wrap');
       var prefix = btn.getAttribute('data-prefix');
@@ -629,6 +629,354 @@
     showStatus('');
   });
 
+  var fanficAdmin = document.getElementById('fanfic-admin');
+  var fanficNum = document.getElementById('fanfic-num');
+  var fanficTitle = document.getElementById('fanfic-title');
+  var fanficText = document.getElementById('fanfic-text');
+  var fanficPublish = document.getElementById('fanfic-publish');
+  var fanficCancel = document.getElementById('fanfic-cancel');
+  var fanficStatus = document.getElementById('fanfic-status');
+  var fanficImgBtn = document.getElementById('fanfic-img-btn');
+  var fanficImg = document.getElementById('fanfic-img');
+  var fanficPreviewLabel = document.getElementById('fanfic-preview-label');
+  var fanficPreviewBox = document.getElementById('fanfic-preview-box');
+  var fanficList = document.getElementById('fanfic-admin-list');
+
+  var fanficEditingId = null;
+  var fanficUnsub = null;
+
+  function fanficShowStatus(text) {
+    fanficStatus.textContent = text || '';
+  }
+
+  function fanficRenderLivePreview() {
+    var v = fanficText.value.trim();
+    if (!v) {
+      fanficPreviewLabel.hidden = true;
+      fanficPreviewBox.hidden = true;
+      fanficPreviewBox.innerHTML = '';
+      return;
+    }
+    fanficPreviewLabel.hidden = false;
+    if (window.marked && window.DOMPurify) {
+      fanficPreviewBox.innerHTML = window.DOMPurify.sanitize(window.marked.parse(v));
+    } else {
+      fanficPreviewBox.textContent = v;
+      fanficPreviewBox.style.whiteSpace = 'pre-wrap';
+    }
+    fanficPreviewBox.hidden = false;
+  }
+
+  function fanficSetPublishMode() {
+    fanficPublish.textContent = fanficEditingId ? 'Сохранить изменения' : 'Опубликовать';
+    fanficCancel.hidden = !fanficEditingId;
+  }
+
+  function fanficResetForm() {
+    fanficNum.value = '';
+    fanficTitle.value = '';
+    fanficText.value = '';
+    fanficEditingId = null;
+    fanficSetPublishMode();
+    fanficPreviewLabel.hidden = true;
+    fanficPreviewBox.hidden = true;
+    fanficPreviewBox.innerHTML = '';
+    fanficShowStatus('');
+  }
+
+  function fanficWrapSelection(before, after) {
+    var ta = fanficText;
+    var s = ta.selectionStart;
+    var e = ta.selectionEnd;
+    var v = ta.value;
+    var sel = v.slice(s, e) || 'текст';
+    ta.value = v.slice(0, s) + before + sel + after + v.slice(e);
+    ta.focus();
+    ta.selectionStart = s + before.length;
+    ta.selectionEnd = e + before.length;
+  }
+
+  function fanficPrefixAtCursor(p) {
+    var ta = fanficText;
+    var s = ta.selectionStart;
+    var v = ta.value;
+    ta.value = v.slice(0, s) + p + v.slice(s);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = s + p.length;
+  }
+
+  function fanficInsertImage(url, alt) {
+    fanficPrefixAtCursor('![' + alt + '](' + url + ')');
+  }
+
+  Array.prototype.forEach.call(fanficAdmin.querySelectorAll('.news-toolbar .tool'), function (btn) {
+    btn.addEventListener('click', function () {
+      var wrap = btn.getAttribute('data-wrap');
+      var prefix = btn.getAttribute('data-prefix');
+      if (wrap) {
+        fanficWrapSelection(wrap, btn.getAttribute('data-close') || wrap);
+      } else if (prefix) {
+        fanficPrefixAtCursor(prefix);
+      } else if (btn.getAttribute('data-link')) {
+        var url = prompt('Ссылка (https://...)');
+        if (!url) return;
+        fanficWrapSelection('[' + url + '](', ')');
+      }
+    });
+  });
+
+  fanficText.addEventListener('keydown', function (e) {
+    var k = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && k === 'b') {
+      e.preventDefault();
+      fanficWrapSelection('**', '**');
+    } else if ((e.ctrlKey || e.metaKey) && k === 'i') {
+      e.preventDefault();
+      fanficWrapSelection('*', '*');
+    } else if ((e.ctrlKey || e.metaKey) && k === 'k') {
+      e.preventDefault();
+      var url = prompt('Ссылка (https://...)');
+      if (url) fanficWrapSelection('[' + url + '](', ')');
+    }
+  });
+
+  fanficText.addEventListener('paste', function (e) {
+    var items = (e.clipboardData && e.clipboardData.items) ? e.clipboardData.items : [];
+    var file = null;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && items[i].type && items[i].type.indexOf('image/') === 0) {
+        file = items[i].getAsFile();
+        break;
+      }
+    }
+    if (!file) return;
+    e.preventDefault();
+    fanficShowStatus('Загрузка изображения…');
+    try {
+      uploadImage(file, function (url) {
+        fanficInsertImage(url, 'картинка');
+        fanficRenderLivePreview();
+        fanficShowStatus('');
+      }, function (err) {
+        fanficShowError(err);
+      });
+    } catch (err) {
+      fanficShowError(err);
+    }
+  });
+
+  fanficText.addEventListener('dragover', function (e) {
+    e.preventDefault();
+  });
+
+  fanficText.addEventListener('drop', function (e) {
+    var files = e.dataTransfer ? e.dataTransfer.files : [];
+    if (!files.length) return;
+    var images = [];
+    for (var i = 0; i < files.length; i++) {
+      if (files[i].type && files[i].type.indexOf('image/') === 0) images.push(files[i]);
+    }
+    if (!images.length) return;
+    e.preventDefault();
+    fanficShowStatus('Загрузка изображений…');
+    var pending = images.length;
+    var firstError = null;
+    images.forEach(function (file, idx) {
+      try {
+        uploadImage(file, function (url) {
+          if (idx === 0) fanficText.focus();
+          fanficInsertImage(url, (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' '));
+          pending--;
+          if (pending === 0) { fanficRenderLivePreview(); fanficShowStatus(firstError ? 'Ошибка: ' + firstError : ''); }
+        }, function (err) {
+          pending--;
+          firstError = firstError || (err && err.message ? err.message : String(err));
+          if (pending === 0) { fanficRenderLivePreview(); fanficShowStatus('Ошибка: ' + firstError); }
+          console.error(err);
+        });
+      } catch (err) {
+        pending--;
+        firstError = firstError || String(err);
+        if (pending === 0) { fanficRenderLivePreview(); fanficShowStatus('Ошибка: ' + firstError); }
+        console.error(err);
+      }
+    });
+  });
+
+  fanficImgBtn.addEventListener('click', function () {
+    fanficImg.click();
+  });
+
+  fanficImg.addEventListener('change', function () {
+    var file = fanficImg.files && fanficImg.files[0];
+    if (!file) return;
+    fanficImgBtn.disabled = true;
+    fanficImgBtn.textContent = 'Загрузка…';
+    try {
+      uploadImage(file, function (url) {
+        var alt = (file.name.replace(/\.[^.]+$/, '') || 'фото').replace(/[_\s]+/g, ' ');
+        fanficInsertImage(url, alt);
+        fanficRenderLivePreview();
+        fanficImgBtn.disabled = false;
+        fanficImgBtn.textContent = 'Картинка';
+        fanficImg.value = '';
+        fanficShowStatus('');
+      }, function (err) {
+        fanficImgBtn.disabled = false;
+        fanficImgBtn.textContent = 'Картинка';
+        fanficImg.value = '';
+        fanficShowError(err);
+      });
+    } catch (err) {
+      fanficImgBtn.disabled = false;
+      fanficImgBtn.textContent = 'Картинка';
+      fanficImg.value = '';
+      fanficShowError(err);
+    }
+  });
+
+  fanficPublish.addEventListener('click', function () {
+    var num = parseInt(fanficNum.value, 10);
+    var title = fanficTitle.value.trim();
+    var text = fanficText.value.trim();
+    if (!num || num < 1) {
+      alert('Укажите номер главы (целое число ≥ 1).');
+      return;
+    }
+    if (!title || !text) {
+      alert('Заполните название и текст главы.');
+      return;
+    }
+
+    fanficPublish.disabled = true;
+
+    var request;
+    if (fanficEditingId) {
+      request = db.collection('fanfic').doc(fanficEditingId).update({
+        number: num, title: title, text: text
+      });
+    } else {
+      request = db.collection('fanfic').add({
+        number: num,
+        title: title,
+        text: text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    request.then(function () {
+      fanficResetForm();
+      fanficPublish.disabled = false;
+    }).catch(function (err) {
+      alert('Не удалось сохранить: ' + err.message);
+      fanficPublish.disabled = false;
+    });
+  });
+
+  fanficCancel.addEventListener('click', function () {
+    fanficResetForm();
+  });
+
+  fanficText.addEventListener('input', fanficRenderLivePreview);
+
+  function renderFanfic(items) {
+    fanficList.innerHTML = '';
+
+    if (!items.length) {
+      fanficList.innerHTML = '<div class="empty">Глав пока нет.</div>';
+      return;
+    }
+
+    items.slice().sort(function (a, b) { return a.number - b.number; })
+      .forEach(function (ch) {
+        var row = document.createElement('div');
+        row.className = 'news-admin-row';
+
+        var head = document.createElement('div');
+        head.className = 'head';
+        var num = document.createElement('span');
+        num.className = 'pin-badge';
+        num.textContent = 'Глава ' + ch.number;
+        var strong = document.createElement('strong');
+        strong.textContent = ch.title;
+        head.appendChild(num);
+        head.appendChild(strong);
+
+        var meta = document.createElement('div');
+        meta.className = 'date';
+        meta.textContent = fmtDate(ch.createdAt);
+
+        var actions = document.createElement('div');
+        actions.className = 'row-actions';
+
+        var editBtn = document.createElement('button');
+        editBtn.className = 'btn small';
+        editBtn.textContent = 'Изменить';
+        editBtn.addEventListener('click', function () {
+          fanficEditingId = ch.id;
+          fanficNum.value = ch.number;
+          fanficTitle.value = ch.title || '';
+          fanficText.value = ch.text || '';
+          fanficSetPublishMode();
+          fanficRenderLivePreview();
+          fanficTitle.focus();
+        });
+
+        var delBtn = document.createElement('button');
+        delBtn.className = 'btn small';
+        delBtn.textContent = 'Удалить';
+        delBtn.addEventListener('click', function () {
+          if (!confirm('Удалить главу?')) return;
+          db.collection('fanfic').doc(ch.id).delete()
+            .catch(function (err) { alert('Не удалось: ' + err.message); });
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+
+        row.appendChild(head);
+        row.appendChild(meta);
+        row.appendChild(actions);
+
+        if (fanficEditingId === ch.id) row.classList.add('editing');
+
+        fanficList.appendChild(row);
+      });
+  }
+
+  function startFanficListening() {
+    if (fanficUnsub) fanficUnsub();
+
+    fanficUnsub = db.collection('fanfic')
+      .orderBy('number', 'asc')
+      .onSnapshot(function (snap) {
+        var items = [];
+        snap.forEach(function (doc) {
+          var d = doc.data();
+          items.push({
+            id: doc.id,
+            number: typeof d.number === 'number' ? d.number : 0,
+            title: d.title,
+            text: d.text,
+            createdAt: d.createdAt
+          });
+        });
+        renderFanfic(items);
+      }, function (err) {
+        console.error('fanfic listen error', err);
+      });
+  }
+
+  function stopFanfic() {
+    if (fanficUnsub) { fanficUnsub(); fanficUnsub = null; }
+  }
+
+  function fanficShowError(err) {
+    var msg = (err && err.message) ? err.message : String(err);
+    fanficShowStatus('Ошибка: ' + msg);
+    console.error(err);
+  }
+
   function showError(err) {
     var msg = (err && err.message) ? err.message : String(err);
     showStatus('Ошибка: ' + msg);
@@ -642,6 +990,8 @@
       startListening();
       newsAdmin.hidden = false;
       startNewsListening();
+      fanficAdmin.hidden = false;
+      startFanficListening();
       renderDraftBanner();
     } else if (user) {
       status.textContent = 'Вы вошли как ' + (user.email || '?') + ' — недостаточно прав.';
@@ -650,12 +1000,16 @@
       if (unsubscribe) { unsubscribe(); unsubscribe = null; }
       newsAdmin.hidden = true;
       stopNews();
+      fanficAdmin.hidden = true;
+      stopFanfic();
     } else {
       status.textContent = 'Войдите для просмотра и удаления сообщений.';
       authBox.hidden = false;
       list.innerHTML = '';
       newsAdmin.hidden = true;
       stopNews();
+      fanficAdmin.hidden = true;
+      stopFanfic();
     }
   }
 

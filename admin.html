@@ -54,6 +54,34 @@
       </div>
       <div id="news-admin-list" style="margin-top: 18px;"></div>
     </div>
+
+    <div id="fanfic-admin" hidden>
+      <h2 style="margin: 30px 0 12px;">Фанфик</h2>
+      <div class="news-form">
+        <div class="news-toolbar">
+          <button type="button" class="tool" data-wrap="**" data-close="**">Жирный</button>
+          <button type="button" class="tool" data-wrap="*" data-close="*">Курсив</button>
+          <button type="button" class="tool" data-prefix="## ">Заголовок</button>
+          <button type="button" class="tool" data-prefix="- ">Список</button>
+          <button type="button" class="tool" data-link="1">Ссылка</button>
+          <button type="button" class="tool" id="fanfic-img-btn">Картинка</button>
+          <input type="file" id="fanfic-img" accept="image/*" hidden>
+        </div>
+        <div class="fanfic-num-row">
+          <input type="number" id="fanfic-num" min="1" step="1" value="1" placeholder="№">
+          <input type="text" id="fanfic-title" maxlength="200" placeholder="Название главы">
+        </div>
+        <textarea id="fanfic-text" maxlength="50000" rows="10" placeholder="Текст главы — можно вставить картинку через Ctrl+V или перетащить файл"></textarea>
+        <div class="news-actions">
+          <button class="btn" id="fanfic-publish">Опубликовать</button>
+          <button class="btn ghost" id="fanfic-cancel" type="button" hidden>Отменить правку</button>
+          <span class="news-status" id="fanfic-status"></span>
+        </div>
+        <label class="news-preview-label" id="fanfic-preview-label" hidden>Предпросмотр</label>
+        <div class="news-preview" id="fanfic-preview-box" hidden></div>
+      </div>
+      <div id="fanfic-admin-list" style="margin-top: 18px;"></div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>

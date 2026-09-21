@@ -28,6 +28,7 @@
   <nav class="tabs" role="tablist" aria-label="Разделы">
     <button class="tab is-active" role="tab" data-tab="timer">Таймер</button>
     <button class="tab" role="tab" data-tab="news">Новости</button>
+    <button class="tab" role="tab" data-tab="fanfic">Фанфик</button>
   </nav>
 
   <div class="tab-panel" id="tab-timer">
@@ -86,7 +87,15 @@
   <div class="tab-panel news-wrap" id="tab-news" hidden>
     <p class="subtitle">обратный отсчёт</p>
     <h1>Новости</h1>
-    <div id="news-list">
+    <div id="news-list" class="masonry">
+      <div class="empty">Загрузка...</div>
+    </div>
+  </div>
+
+  <div class="tab-panel news-wrap" id="tab-fanfic" hidden>
+    <p class="subtitle">обратный отсчёт</p>
+    <h1>Фанфик</h1>
+    <div id="fanfic-list" class="masonry">
       <div class="empty">Загрузка...</div>
     </div>
   </div>
@@ -105,8 +114,8 @@
   <script src="js/messages.js"></script>
   <script src="js/poll.js"></script>
   <script src="js/news.js"></script>
+  <script src="js/fanfic.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/live.js"></script>
-</body>
 </body>
 </html>
