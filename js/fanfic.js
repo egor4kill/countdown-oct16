@@ -7,6 +7,14 @@
   var list = document.getElementById('fanfic-list');
   if (!list) return;
 
+  var chapters = [];
+  var current = -1;
+  var overlay = null;
+  var modalBody = null;
+  var prevBtn = null;
+  var nextBtn = null;
+  var countEl = null;
+
   function fmtDate(t) {
     if (!t || !t.toDate) return '—';
     return t.toDate().toLocaleDateString('ru-RU', {
@@ -26,19 +34,30 @@
     return div;
   }
 
-  function openChapter(ch) {
-    var overlay = document.createElement('div');
-    overlay.className = 'news-modal-overlay';
+  function closeReader() {
+    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    overlay = null;
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', onKey, true);
+  }
 
-    var modal = document.createElement('div');
-    modal.className = 'news-modal';
+  function onKey(e) {
+    if (!overlay) return;
+    if (e.key === 'Escape') {
+      closeReader();
+    } else if (e.key === 'ArrowLeft' && current > 0) {
+      renderChapter(current - 1);
+    } else if (e.key === 'ArrowRight' && current < chapters.length - 1) {
+      renderChapter(current + 1);
+    }
+  }
 
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'news-modal-close';
-    closeBtn.type = 'button';
-    closeBtn.setAttribute('aria-label', 'Закрыть');
-    closeBtn.textContent = '×';
-    closeBtn.addEventListener('click', close);
+  function renderChapter(idx) {
+    if (idx < 0 || idx >= chapters.length) return;
+    current = idx;
+    var ch = chapters[idx];
+
+    modalBody.innerHTML = '';
 
     var num = document.createElement('div');
     num.className = 'stamp stamp-chapter';
@@ -51,33 +70,77 @@
     date.className = 'news-modal-date';
     date.textContent = fmtDate(ch.createdAt);
 
+    modalBody.appendChild(num);
+    modalBody.appendChild(title);
+    modalBody.appendChild(date);
+    modalBody.appendChild(renderMarkdown(ch.text || '', 'news-body'));
+
+    prevBtn.disabled = current <= 0;
+    nextBtn.disabled = current >= chapters.length - 1;
+    countEl.textContent = (current + 1) + ' из ' + chapters.length;
+  }
+
+  function openReader(startIdx) {
+    if (!chapters.length) return;
+    closeReader();
+
+    overlay = document.createElement('div');
+    overlay.className = 'news-modal-overlay';
+
+    var modal = document.createElement('div');
+    modal.className = 'news-modal fanfic-reader';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'news-modal-close';
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Закрыть');
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', closeReader);
+
+    modalBody = document.createElement('div');
+
+    var nav = document.createElement('div');
+    nav.className = 'fanfic-nav';
+
+    prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.textContent = '← предыдущая';
+
+    countEl = document.createElement('span');
+    countEl.className = 'page-count';
+
+    nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.textContent = 'следующая →';
+
+    prevBtn.addEventListener('click', function () {
+      renderChapter(current - 1);
+    });
+    nextBtn.addEventListener('click', function () {
+      renderChapter(current + 1);
+    });
+
+    nav.appendChild(prevBtn);
+    nav.appendChild(countEl);
+    nav.appendChild(nextBtn);
+
     modal.appendChild(closeBtn);
-    modal.appendChild(num);
-    modal.appendChild(title);
-    modal.appendChild(date);
-    modal.appendChild(renderMarkdown(ch.text || '', 'news-body'));
+    modal.appendChild(modalBody);
+    modal.appendChild(nav);
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
-    function close() {
-      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', onKey, true);
-    }
-
-    function onKey(e) {
-      if (e.key === 'Escape') close();
-    }
-
     overlay.addEventListener('click', function (e) {
-      if (e.target === overlay) close();
+      if (e.target === overlay) closeReader();
     });
     document.addEventListener('keydown', onKey, true);
+
+    renderChapter(startIdx);
   }
 
-  function buildCard(ch) {
+  function buildCard(ch, idx) {
     var card = document.createElement('article');
     card.className = 'news-card';
 
@@ -110,7 +173,7 @@
 
     card.appendChild(cont);
     card.addEventListener('click', function () {
-      openChapter(ch);
+      openReader(idx);
     });
 
     return card;
@@ -133,6 +196,7 @@
       });
 
       items.sort(function (a, b) { return a.number - b.number; });
+      chapters = items;
 
       list.innerHTML = '';
 
@@ -141,8 +205,8 @@
         return;
       }
 
-      items.forEach(function (ch) {
-        list.appendChild(buildCard(ch));
+      items.forEach(function (ch, i) {
+        list.appendChild(buildCard(ch, i));
       });
     }, function (err) {
       list.innerHTML = '<div class="empty">Ошибка загрузки: ' + err.message + '</div>';
